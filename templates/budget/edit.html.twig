@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier Budget{% endblock %}
+
+{% block body %}
+{{ parent() }}
+<h2>Modifier budget</h2>
+
+{{ include('budget/_form.html.twig') }}
+
+<a href="{{ path('app_budget_index') }}">Retour</a>
+
+{% endblock %}

@@ -1,0 +1,27 @@
+{{ form_start(form, {'attr': {'class': 'surface-card'}}) }}
+
+<div style="margin-bottom:1rem">
+    {{ form_label(form.libelleBudget) }}
+    {{ form_widget(form.libelleBudget) }}
+</div>
+
+<div style="margin-bottom:1rem">
+    {{ form_label(form.montantTotal) }}
+    {{ form_widget(form.montantTotal) }}
+</div>
+
+<div style="margin-bottom:1rem">
+    {{ form_label(form.deviseBudget) }}
+    {{ form_widget(form.deviseBudget) }}
+</div>
+
+<div style="margin-bottom:1rem">
+    {{ form_label(form.descriptionBudget) }}
+    {{ form_widget(form.descriptionBudget) }}
+</div>
+
+<button class="btn btn--primary">
+    {{ button_label|default('Enregistrer') }}
+</button>
+
+{{ form_end(form) }}

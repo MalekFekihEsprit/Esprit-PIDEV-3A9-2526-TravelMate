@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détail Budget{% endblock %}
+
+{% block body %}
+{{ parent() }}
+<h2>{{ budget.libelleBudget }}</h2>
+
+<p><strong>Montant:</strong> {{ budget.montantTotal }} {{ budget.deviseBudget }}</p>
+<p><strong>Description:</strong> {{ budget.descriptionBudget }}</p>
+
+<hr>
+
+<h3>Dépenses</h3>
+
+<table class="surface-card" style="width:100%; margin-top:1rem">
+    <tr>
+        <th>Libellé</th>
+        <th>Montant</th>
+        <th>Catégorie</th>
+        <th>Date</th>
+    </tr>
+
+    {% for d in budget.depenses %}
+        <tr>
+            <td>{{ d.libelleDepense }}</td>
+            <td>{{ d.montantDepense }}</td>
+            <td>{{ d.categorieDepense }}</td>
+            <td>{{ d.dateCreation|date('Y-m-d') }}</td>
+        </tr>
+    {% else %}
+        <tr><td colspan="4">Aucune dépense</td></tr>
+    {% endfor %}
+</table>
+
+<br>
+
+<a href="{{ path('app_budget_edit', {'id': budget.idBudget}) }}" class="btn">Modifier</a>
+
+{{ include('budget/_delete_form.html.twig') }}
+
+{% endblock %}

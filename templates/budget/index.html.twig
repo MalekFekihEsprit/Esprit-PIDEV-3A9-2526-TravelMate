@@ -1,0 +1,651 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Budgets — TravelMate{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+/* ── TOOLBAR ─────────────────────────── */
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+.toolbar__left  { display:flex; flex-wrap:wrap; gap:.6rem; flex:1; min-width:0; align-items:center; }
+.toolbar__right { display:flex; flex-wrap:wrap; gap:.6rem; flex-shrink:0; align-items:center; }
+
+.search-field {
+    display:flex; align-items:center; gap:.45rem;
+    background:var(--color-bg); border:1px solid var(--color-border);
+    border-radius:999px; padding:.48rem 1rem;
+    min-width:220px; transition:border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.search-field:focus-within {
+    border-color:rgba(196,111,75,.45);
+    box-shadow:0 0 0 3px rgba(196,111,75,.1);
+}
+.search-field__input {
+    border:none; outline:none; background:transparent;
+    font:inherit; font-size:.88rem; color:var(--color-text); width:100%;
+}
+.search-field__input::placeholder { color:var(--color-text-muted); }
+
+.filter-select {
+    appearance:none; -webkit-appearance:none;
+    background:var(--color-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236e6258' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right .75rem center;
+    border:1px solid var(--color-border); border-radius:999px;
+    padding:.48rem 2.2rem .48rem 1rem; font:inherit; font-size:.86rem;
+    color:var(--color-text); cursor:pointer; transition:border-color var(--transition-fast);
+}
+.filter-select:focus { outline:none; border-color:rgba(196,111,75,.45); }
+
+.chip-group { display:flex; flex-wrap:wrap; gap:.35rem; align-items:center; }
+.chip-label { font-size:.78rem; color:var(--color-text-muted); font-weight:600; white-space:nowrap; }
+.chip {
+    padding:.34rem .8rem; border-radius:999px; font-size:.78rem; font-weight:600;
+    border:1.5px solid var(--color-border); background:var(--color-bg);
+    color:var(--color-text-muted); cursor:pointer; transition:all var(--transition-fast);
+}
+.chip:hover { border-color:var(--color-primary); color:var(--color-primary); }
+.chip.active { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
+.chip--over.active { background:#b91c1c; border-color:#b91c1c; }
+.chip--ok.active   { background:#047857; border-color:#047857; }
+
+.btn-export {
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.46rem .95rem; border-radius:999px; font-size:.82rem; font-weight:600;
+    border:1.5px solid var(--color-border); background:var(--color-surface);
+    color:var(--color-text-muted); cursor:pointer; transition:all var(--transition-fast);
+}
+.btn-export:hover { border-color:var(--color-primary); color:var(--color-primary); background:var(--color-hover); }
+
+/* ── SUMMARY BAR ─────────────────────── */
+.summary-bar {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(155px,1fr));
+    gap:.85rem; margin-bottom:1.75rem;
+}
+.summary-card {
+    background:var(--color-surface); border:1px solid var(--color-border);
+    border-radius:var(--radius-md); padding:.95rem 1.15rem;
+}
+.summary-card__label {
+    font-size:.68rem; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--color-text-muted); margin-bottom:.2rem;
+}
+.summary-card__value {
+    font-family:'Fraunces',serif; font-size:1.4rem; font-weight:600;
+    color:var(--color-primary); line-height:1.1;
+}
+.summary-card__sub { font-size:.74rem; color:var(--color-text-muted); margin-top:.1rem; }
+
+/* ── RESULTS META ────────────────────── */
+.results-meta {
+    font-size:.82rem; color:var(--color-text-muted); margin-bottom:.85rem;
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.5rem;
+}
+
+/* ── GRID ────────────────────────────── */
+.act-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(280px,1fr));
+    gap:1.25rem;
+}
+
+/* ── CARD ────────────────────────────── */
+.act-card {
+    display:flex; flex-direction:column;
+    background:var(--color-surface); border:1px solid var(--color-border);
+    border-radius:var(--radius-lg); overflow:hidden;
+    transition:transform var(--transition-base), box-shadow var(--transition-base);
+}
+.act-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px var(--color-shadow); }
+
+.act-card__img-wrap {
+    position:relative; height:110px;
+    background:linear-gradient(135deg, var(--color-surface-soft) 0%, rgba(221,191,140,.3) 100%);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.act-card__img-placeholder { font-size:2.2rem; line-height:1; }
+.act-card__badges {
+    position:absolute; top:.55rem; right:.55rem;
+    display:flex; gap:.3rem; flex-wrap:wrap; z-index:2;
+}
+.act-card__body {
+    flex:1; display:flex; flex-direction:column;
+    gap:.35rem; padding:.9rem 1rem 1rem;
+}
+.act-card__name   { font-weight:700; font-size:.97rem; color:var(--color-text); line-height:1.3; }
+.act-card__location { font-size:.8rem; color:var(--color-text-muted); }
+.act-card__tags { display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.1rem; }
+
+.budget-progress {
+    margin-top:.35rem; height:5px; border-radius:99px;
+    background:var(--color-surface-soft); overflow:hidden;
+}
+.budget-progress__fill {
+    height:100%; border-radius:99px; background:var(--color-secondary);
+    transition:width .4s ease;
+}
+.budget-progress__fill--over { background:#dc2626; }
+
+.act-card__footer {
+    margin-top:auto; padding-top:.75rem;
+    border-top:1px solid var(--color-border);
+    display:flex; align-items:flex-end; justify-content:space-between; gap:.5rem;
+}
+.act-price-label {
+    font-size:.68rem; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--color-text-muted); margin-bottom:.1rem;
+}
+.act-price-value {
+    font-family:'Fraunces',serif; font-size:1.05rem; font-weight:600; color:var(--color-primary);
+}
+.act-card__arrow {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:34px; height:34px; border-radius:50%;
+    background:var(--color-primary); color:#fff; font-size:.95rem; text-decoration:none; flex-shrink:0;
+    transition:background var(--transition-fast), transform var(--transition-fast);
+}
+.act-card__arrow:hover { background:var(--color-primary-dark); transform:scale(1.08); }
+
+/* badges & tags */
+.badge {
+    display:inline-flex; align-items:center; padding:.18rem .55rem; border-radius:999px;
+    font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+}
+.badge--cat      { background:rgba(255,253,249,.92); color:var(--color-primary-dark); border:1px solid rgba(196,111,75,.2); }
+.badge--trending { background:#fde8e8; color:#b91c1c; }
+.tag {
+    display:inline-flex; align-items:center; padding:.2rem .55rem; border-radius:999px; font-size:.72rem;
+    background:var(--color-surface-soft); color:var(--color-text-muted); border:1px solid var(--color-border);
+}
+.tag--facile    { background:#d1fae5; color:#065f46; border-color:#a7f3d0; }
+.tag--difficile { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+
+/* empty states */
+.empty-state {
+    grid-column:1/-1; text-align:center; padding:4rem 1rem; color:var(--color-text-muted);
+}
+.empty-state__icon  { font-size:3rem; margin-bottom:1rem; }
+.empty-state__title { font-size:1.1rem; font-weight:700; color:var(--color-text); margin-bottom:.5rem; }
+
+/* hero */
+.act-hero {
+    position:relative; border-radius:var(--radius-xl); overflow:hidden;
+    min-height:200px; display:flex; align-items:stretch; margin-bottom:1.75rem;
+    background:linear-gradient(135deg, #3b2a1a 0%, var(--color-primary) 100%);
+}
+.act-hero__bg { position:absolute; inset:0; background-size:cover; background-position:center; opacity:.22; }
+.act-hero__content {
+    position:relative; flex:1; padding:1.8rem 2rem; color:#fff;
+    display:flex; flex-direction:column; justify-content:center; gap:.45rem;
+}
+.act-hero__eyebrow { font-size:.76rem; letter-spacing:.12em; text-transform:uppercase; opacity:.7; font-weight:500; }
+.act-hero__title {
+    font-family:'Fraunces',serif; font-size:clamp(1.4rem,3vw,2rem);
+    font-weight:600; line-height:1.15; letter-spacing:-.02em; margin:0;
+}
+.act-hero__desc { opacity:.8; font-size:.9rem; max-width:52ch; }
+.act-hero__actions { margin-top:.4rem; }
+.btn-hero-primary {
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.55rem 1.25rem; background:#fff; color:var(--color-primary-dark);
+    border-radius:999px; font-weight:700; font-size:.88rem; text-decoration:none;
+    transition:opacity var(--transition-fast), transform var(--transition-fast);
+}
+.btn-hero-primary:hover { opacity:.88; transform:translateY(-1px); }
+.act-hero__stats {
+    position:relative; display:flex; flex-direction:column;
+    justify-content:center; align-items:center;
+    padding:1.5rem 2.5rem; color:#fff;
+    border-left:1px solid rgba(255,255,255,.15); gap:.4rem;
+}
+.hero-stat__num   { font-family:'Fraunces',serif; font-size:2.6rem; font-weight:600; line-height:1; }
+.hero-stat__label { font-size:.76rem; text-transform:uppercase; letter-spacing:.1em; opacity:.65; }
+
+/* print */
+@media print {
+    .toolbar, .act-hero, .app-navbar, .site-footer,
+    .act-card__arrow, .results-meta { display:none !important; }
+    body { background:#fff !important; }
+    .act-grid { grid-template-columns:repeat(3,1fr) !important; gap:.5rem !important; }
+    .act-card { break-inside:avoid; box-shadow:none; }
+    .summary-bar { grid-template-columns:repeat(4,1fr); }
+    .app-main { padding-top:0 !important; }
+}
+
+/* responsive */
+@media(max-width:700px) {
+    .act-hero { flex-direction:column; }
+    .act-hero__stats {
+        flex-direction:row; border-left:none; border-top:1px solid rgba(255,255,255,.15);
+        padding:1rem 1.5rem; justify-content:flex-start; gap:2rem;
+    }
+    .act-grid { grid-template-columns:1fr; }
+    .toolbar  { flex-direction:column; align-items:stretch; }
+    .toolbar__left, .toolbar__right { width:100%; }
+}
+</style>
+{% endblock %}
+
+{% block body %}
+
+{# ══ PRE-COMPUTE (Twig) ════════════════ #}
+{% set grandTotal = 0 %}
+{% set grandSpent = 0 %}
+{% set countOver  = 0 %}
+{% for budget in budgets %}
+    {% set tot = 0 %}
+    {% for dep in budget.depenses %}{% set tot = tot + dep.montantDepense %}{% endfor %}
+    {% set grandTotal = grandTotal + budget.montantTotal %}
+    {% set grandSpent = grandSpent + tot %}
+    {% if tot > budget.montantTotal %}{% set countOver = countOver + 1 %}{% endif %}
+{% endfor %}
+
+{# ══ HERO ══════════════════════════════ #}
+<section class="act-hero">
+    <div class="act-hero__bg" style="background-image:url('{{ asset('uploads/budget/hero.jpg') }}')"></div>
+    <div class="act-hero__content">
+        <span class="act-hero__eyebrow">Gestion financière</span>
+        <h1 class="act-hero__title">Gérez vos budgets de voyage</h1>
+        <p class="act-hero__desc">Suivez vos dépenses, contrôlez vos coûts et profitez de vos voyages sans stress financier.</p>
+        <div class="act-hero__actions">
+            <a href="{{ path('app_budget_new') }}" class="btn-hero-primary">+ Nouveau budget</a>
+        </div>
+    </div>
+    <div class="act-hero__stats">
+        <div class="hero-stat">
+            <div class="hero-stat__num">{{ budgets|length }}</div>
+            <div class="hero-stat__label">Budgets</div>
+        </div>
+    </div>
+</section>
+
+{# ══ SUMMARY BAR ═══════════════════════ #}
+<div class="summary-bar">
+    <div class="summary-card">
+        <div class="summary-card__label">Budget total</div>
+        <div class="summary-card__value">{{ grandTotal }}</div>
+        <div class="summary-card__sub">toutes devises</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-card__label">Total dépensé</div>
+        <div class="summary-card__value" style="color:var(--color-text)">{{ grandSpent }}</div>
+        <div class="summary-card__sub">sur tous les budgets</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-card__label">Restant estimé</div>
+        <div class="summary-card__value" style="color:var(--color-secondary)">{{ grandTotal - grandSpent }}</div>
+        <div class="summary-card__sub">solde global</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-card__label">Budgets dépassés</div>
+        <div class="summary-card__value" style="color:{% if countOver > 0 %}#dc2626{% else %}var(--color-secondary){% endif %}">
+            {{ countOver }}
+        </div>
+        <div class="summary-card__sub">sur {{ budgets|length }} budgets</div>
+    </div>
+</div>
+
+{# ══ TOOLBAR ════════════════════════════ #}
+<div class="toolbar">
+    <div class="toolbar__left">
+
+        {# Recherche #}
+        <div class="search-field">
+            <span>🔍</span>
+            <input type="search" id="searchInput" class="search-field__input" placeholder="Nom, voyage, devise…">
+        </div>
+
+        {# Filtre devise — chips générés par JS #}
+        <div class="chip-group" id="deviseFilter">
+            <span class="chip-label">Devise :</span>
+            <button class="chip active" data-devise="all">Toutes</button>
+        </div>
+
+        {# Filtre statut #}
+        <div class="chip-group" id="statutFilter">
+            <span class="chip-label">Statut :</span>
+            <button class="chip active"     data-statut="all">Tous</button>
+            <button class="chip chip--ok"   data-statut="ok">✔ Contrôlé</button>
+            <button class="chip chip--over" data-statut="over">⚠ Dépassé</button>
+        </div>
+
+    </div>
+    <div class="toolbar__right">
+
+        {# Tri #}
+        <select id="sortSelect" class="filter-select">
+            <option value="default">Ordre par défaut</option>
+            <option value="name-asc">Nom A → Z</option>
+            <option value="name-desc">Nom Z → A</option>
+            <option value="montant-desc">Montant ↓</option>
+            <option value="montant-asc">Montant ↑</option>
+            <option value="restant-desc">Restant ↓</option>
+            <option value="restant-asc">Restant ↑</option>
+            <option value="depenses-desc">Nb dépenses ↓</option>
+            <option value="depenses-asc">Nb dépenses ↑</option>
+        </select>
+
+        {# Vue grille / liste #}
+        <button class="btn-export" id="toggleView" title="Changer la vue">
+            <svg id="viewIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+            </svg>
+            Vue
+        </button>
+
+        {# CSV #}
+        <button class="btn-export" id="exportCsv">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            CSV
+        </button>
+
+        {# PDF #}
+        <button class="btn-export" id="exportPdf">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="15" y2="11"/>
+            </svg>
+            PDF
+        </button>
+
+    </div>
+</div>
+
+{# Results count #}
+<div class="results-meta">
+    <span id="resultsCount"><strong>{{ budgets|length }}</strong> budget(s) affiché(s)</span>
+    <span id="activeFiltersLabel" style="color:var(--color-primary);font-weight:600"></span>
+</div>
+
+{# ══ GRID ═══════════════════════════════ #}
+<div class="act-grid" id="budgetGrid">
+
+{% for budget in budgets %}
+
+    {% set totalDepense = 0 %}
+    {% for dep in budget.depenses %}
+        {% set totalDepense = totalDepense + dep.montantDepense %}
+    {% endfor %}
+    {% set restant = budget.montantTotal - totalDepense %}
+    {% set isOver  = restant < 0 %}
+    {% set pct     = budget.montantTotal > 0 ? ((totalDepense / budget.montantTotal) * 100)|round(0) : 0 %}
+
+    <div class="act-card"
+         data-name="{{ budget.libelleBudget|lower }}"
+         data-voyage="{{ budget.voyage ? budget.voyage.titre_voyage|lower : '' }}"
+         data-devise="{{ budget.deviseBudget ?? 'TND' }}"
+         data-statut="{{ isOver ? 'over' : 'ok' }}"
+         data-montant="{{ budget.montantTotal }}"
+         data-depenses="{{ budget.depenses|length }}"
+         data-restant="{{ restant }}">
+
+        <div class="act-card__img-wrap">
+            <div class="act-card__img-placeholder">💰</div>
+            <div class="act-card__badges">
+                <span class="badge badge--cat">{{ budget.deviseBudget ?? 'TND' }}</span>
+                {% if isOver %}<span class="badge badge--trending">Dépassé</span>{% endif %}
+            </div>
+        </div>
+
+        <div class="act-card__body">
+            <div class="act-card__name">{{ budget.libelleBudget }}</div>
+
+            {% if budget.voyage %}
+                <div class="act-card__location">📍 {{ budget.voyage.titre_voyage }}</div>
+            {% endif %}
+
+            <div class="act-card__tags">
+                <span class="tag">{{ budget.depenses|length }} dépenses</span>
+                <span class="tag {{ isOver ? 'tag--difficile' : 'tag--facile' }}">
+                    {{ isOver ? '⚠ Dépassé' : '✔ Contrôlé' }}
+                </span>
+            </div>
+
+            <div class="budget-progress" title="{{ pct }}% consommé">
+                <div class="budget-progress__fill {{ isOver ? 'budget-progress__fill--over' : '' }}"
+                     style="width:{{ pct > 100 ? 100 : pct }}%"></div>
+            </div>
+            <div style="font-size:.7rem;color:var(--color-text-muted);text-align:right;margin-top:.1rem">
+                {{ pct }}% consommé
+            </div>
+
+            <div class="act-card__footer">
+                <div>
+                    <div class="act-price-label">Budget total</div>
+                    <div class="act-price-value">{{ budget.montantTotal }} {{ budget.deviseBudget ?? 'TND' }}</div>
+                    <div style="font-size:.78rem;color:var(--color-text-muted)">Dépensé : {{ totalDepense }}</div>
+                    <div style="font-size:.82rem;font-weight:600;color:{{ isOver ? '#dc2626' : 'var(--color-secondary)' }}">
+                        {{ isOver ? '↑ Excès : ' ~ restant|abs : '↓ Restant : ' ~ restant }}
+                    </div>
+                </div>
+                <a href="{{ path('app_budget_show', {id: budget.idBudget}) }}" class="act-card__arrow">→</a>
+            </div>
+        </div>
+
+    </div>
+
+{% else %}
+    <div class="empty-state">
+        <div class="empty-state__icon">💸</div>
+        <div class="empty-state__title">Aucun budget pour l'instant</div>
+        <p>Créez votre premier budget pour commencer à suivre vos dépenses.</p>
+    </div>
+{% endfor %}
+
+</div>
+
+<div id="noResults" style="display:none;text-align:center;padding:3rem 1rem;color:var(--color-text-muted)">
+    <div style="font-size:2.5rem;margin-bottom:.75rem">🔍</div>
+    <div style="font-weight:700;font-size:1rem;color:var(--color-text);margin-bottom:.35rem">Aucun résultat</div>
+    <p>Essayez de modifier vos filtres ou votre recherche.</p>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+/* ─── State ──────────────────────────── */
+const state = { search:'', devises: new Set(['all']), statut:'all', sort:'default', view:'grid' };
+
+const grid          = document.getElementById('budgetGrid');
+const noResults     = document.getElementById('noResults');
+const resultsCount  = document.getElementById('resultsCount');
+const activeFilLbl  = document.getElementById('activeFiltersLabel');
+const allCards      = Array.from(document.querySelectorAll('.act-card'));
+
+/* ─── Build devise chips from card data ─ */
+(function() {
+    const deviseFilter = document.getElementById('deviseFilter');
+    const devises = [...new Set(allCards.map(c => c.dataset.devise))].sort();
+    devises.forEach(d => {
+        const b = document.createElement('button');
+        b.className = 'chip'; b.dataset.devise = d; b.textContent = d;
+        deviseFilter.appendChild(b);
+    });
+})();
+
+/* ─── Core: filter + sort + render ────── */
+function applyAll() {
+    const q = state.search.toLowerCase().trim();
+
+    let visible = allCards.filter(c => {
+        const txt = !q || c.dataset.name.includes(q) || c.dataset.voyage.includes(q) || c.dataset.devise.toLowerCase().includes(q);
+        const dev = state.devises.has('all') || state.devises.has(c.dataset.devise);
+        const sta = state.statut === 'all' || c.dataset.statut === state.statut;
+        return txt && dev && sta;
+    });
+
+    // sort
+    visible = [...visible].sort((a, b) => {
+        switch (state.sort) {
+            case 'name-asc':      return a.dataset.name.localeCompare(b.dataset.name);
+            case 'name-desc':     return b.dataset.name.localeCompare(a.dataset.name);
+            case 'montant-asc':   return +a.dataset.montant  - +b.dataset.montant;
+            case 'montant-desc':  return +b.dataset.montant  - +a.dataset.montant;
+            case 'depenses-asc':  return +a.dataset.depenses - +b.dataset.depenses;
+            case 'depenses-desc': return +b.dataset.depenses - +a.dataset.depenses;
+            case 'restant-asc':   return +a.dataset.restant  - +b.dataset.restant;
+            case 'restant-desc':  return +b.dataset.restant  - +a.dataset.restant;
+            default: return 0;
+        }
+    });
+
+    allCards.forEach(c => c.style.display = 'none');
+    visible.forEach(c => { c.style.display = ''; grid.appendChild(c); });
+
+    resultsCount.innerHTML = `<strong>${visible.length}</strong> / ${allCards.length} budget(s) affiché(s)`;
+
+    const parts = [];
+    if (q) parts.push(`🔍 "${q}"`);
+    if (!state.devises.has('all')) parts.push([...state.devises].join(', '));
+    if (state.statut !== 'all') parts.push(state.statut === 'over' ? '⚠ Dépassés' : '✔ Contrôlés');
+    if (state.sort !== 'default') parts.push('Trié');
+    activeFilLbl.textContent = parts.length ? '— ' + parts.join(' · ') : '';
+
+    noResults.style.display = visible.length === 0 ? 'block' : 'none';
+}
+
+/* ─── Search ──────────────────────────── */
+document.getElementById('searchInput').addEventListener('input', e => {
+    state.search = e.target.value; applyAll();
+});
+
+/* ─── Devise chips ────────────────────── */
+document.getElementById('deviseFilter').addEventListener('click', e => {
+    const btn = e.target.closest('.chip[data-devise]');
+    if (!btn) return;
+    const d = btn.dataset.devise;
+    if (d === 'all') { state.devises.clear(); state.devises.add('all'); }
+    else {
+        state.devises.delete('all');
+        state.devises.has(d) ? state.devises.delete(d) : state.devises.add(d);
+        if (!state.devises.size) state.devises.add('all');
+    }
+    document.querySelectorAll('#deviseFilter .chip').forEach(c =>
+        c.classList.toggle('active', state.devises.has(c.dataset.devise))
+    );
+    applyAll();
+});
+
+/* ─── Statut chips ────────────────────── */
+document.getElementById('statutFilter').addEventListener('click', e => {
+    const btn = e.target.closest('.chip[data-statut]');
+    if (!btn) return;
+    state.statut = btn.dataset.statut;
+    document.querySelectorAll('#statutFilter .chip').forEach(c =>
+        c.classList.toggle('active', c.dataset.statut === state.statut)
+    );
+    applyAll();
+});
+
+/* ─── Sort ────────────────────────────── */
+document.getElementById('sortSelect').addEventListener('change', e => {
+    state.sort = e.target.value; applyAll();
+});
+
+/* ─── Toggle view ─────────────────────── */
+document.getElementById('toggleView').addEventListener('click', () => {
+    state.view = state.view === 'grid' ? 'list' : 'grid';
+    grid.style.gridTemplateColumns = state.view === 'list' ? '1fr' : '';
+    document.getElementById('viewIcon').innerHTML = state.view === 'list'
+        ? `<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>`
+        : `<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>`;
+});
+
+/* ─── Export CSV ──────────────────────── */
+document.getElementById('exportCsv').addEventListener('click', () => {
+    const vis  = allCards.filter(c => c.style.display !== 'none');
+    const rows = [['Nom','Devise','Montant total','Nb dépenses','Restant','Statut']];
+    vis.forEach(c => rows.push([
+        c.querySelector('.act-card__name').textContent.trim(),
+        c.dataset.devise, c.dataset.montant, c.dataset.depenses,
+        c.dataset.restant, c.dataset.statut === 'over' ? 'Dépassé' : 'Contrôlé'
+    ]));
+    const csv  = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
+    const a    = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'budgets_travelmate.csv' });
+    a.click(); URL.revokeObjectURL(a.href);
+});
+
+/* ─── Export PDF ──────────────────────── */
+document.getElementById('exportPdf').addEventListener('click', () => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+    const vis = allCards.filter(c => c.style.display !== 'none');
+
+    // Header band
+    doc.setFillColor(196, 111, 75);
+    doc.rect(0, 0, 297, 22, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(13); doc.setFont('helvetica','bold');
+    doc.text('TravelMate — Rapport Budgets', 14, 14);
+    doc.setFontSize(8.5); doc.setFont('helvetica','normal');
+    doc.text('Exporté le ' + new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}), 283, 14, {align:'right'});
+
+    // Summary line
+    const sumMontant = vis.reduce((s,c) => s + +c.dataset.montant, 0);
+    const sumRestant = vis.reduce((s,c) => s + +c.dataset.restant, 0);
+    const nbOver     = vis.filter(c => c.dataset.statut === 'over').length;
+    doc.setTextColor(70,50,40); doc.setFontSize(8.5);
+    doc.text(
+        `Budgets : ${vis.length}   |   Montant total : ${sumMontant.toLocaleString('fr-FR')}   |   Restant global : ${sumRestant.toLocaleString('fr-FR')}   |   Dépassés : ${nbOver}`,
+        14, 30
+    );
+
+    // Table
+    doc.autoTable({
+        startY: 36,
+        head: [['Nom du budget','Devise','Montant total','Dépenses','Restant','Statut']],
+        body: vis.map(c => [
+            c.querySelector('.act-card__name').textContent.trim(),
+            c.dataset.devise,
+            (+c.dataset.montant).toLocaleString('fr-FR'),
+            c.dataset.depenses,
+            (+c.dataset.restant).toLocaleString('fr-FR'),
+            c.dataset.statut === 'over' ? 'Dépassé' : 'Contrôlé'
+        ]),
+        headStyles:           { fillColor:[196,111,75], textColor:255, fontStyle:'bold', fontSize:9 },
+        bodyStyles:           { fontSize:8.5, textColor:[40,40,40] },
+        alternateRowStyles:   { fillColor:[252,248,243] },
+        columnStyles: {
+            0: { cellWidth:72 }, 1: { cellWidth:22, halign:'center' },
+            2: { cellWidth:36, halign:'right' }, 3: { cellWidth:26, halign:'center' },
+            4: { cellWidth:36, halign:'right' }, 5: { cellWidth:30, halign:'center' },
+        },
+        didParseCell(data) {
+            if (data.section === 'body' && data.column.index === 5) {
+                data.cell.styles.textColor = data.cell.raw === 'Dépassé' ? [185,28,28] : [4,120,87];
+                data.cell.styles.fontStyle = 'bold';
+            }
+        },
+        margin: { left:14, right:14 },
+    });
+
+    // Page numbers
+    const n = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= n; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7.5); doc.setTextColor(180,180,180);
+        doc.text(`Page ${i} / ${n}`, 283, 205, {align:'right'});
+    }
+
+    doc.save('budgets_travelmate.pdf');
+});
+</script>
+{% endblock %}
