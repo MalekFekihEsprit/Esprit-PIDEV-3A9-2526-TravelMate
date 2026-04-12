@@ -1,27 +1,514 @@
-{{ form_start(form, {'attr': {'class': 'surface-card'}}) }}
+{#
+  ══════════════════════════════════════════════════════════════════
+  IMPORTANT — dans BudgetController.php, passez la liste des voyages
+  dans CHAQUE méthode qui rend ce template (new + edit) :
 
-<div style="margin-bottom:1rem">
-    {{ form_label(form.libelleBudget) }}
-    {{ form_widget(form.libelleBudget) }}
+    use App\Repository\VoyageRepository;
+
+    // new()
+    return $this->render('budget/new.html.twig', [
+        'form'    => $form->createView(),
+        'budget'  => $budget,
+        'voyages' => $voyageRepository->findAll(),
+    ]);
+
+    // edit()
+    return $this->render('budget/edit.html.twig', [
+        'form'    => $form->createView(),
+        'budget'  => $budget,
+        'voyages' => $voyageRepository->findAll(),
+    ]);
+  ══════════════════════════════════════════════════════════════════
+#}
+
+<style>
+/* ══ BUDGET FORM ═════════════════════════════════════════════════ */
+.budget-form-wrap { max-width: 720px; margin: 0 auto; }
+
+.budget-form-header {
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 2rem; padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+}
+.budget-form-header__bar {
+    width: 46px; height: 46px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 14px rgba(196,111,75,.3);
+}
+.budget-form-header__text h2 {
+    font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 600;
+    color: var(--color-text); margin: 0 0 .15rem;
+}
+.budget-form-header__text p { font-size: .82rem; color: var(--color-text-muted); margin: 0; }
+
+.form-section {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); padding: 1.5rem 1.75rem; margin-bottom: 1rem;
+}
+.form-section__title {
+    font-size: .7rem; text-transform: uppercase; letter-spacing: .1em;
+    font-weight: 700; color: var(--color-primary);
+    margin-bottom: 1.15rem; padding-bottom: .6rem;
+    border-bottom: 1px dashed var(--color-border);
+}
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.25rem; }
+.form-row--full { grid-template-columns: 1fr; }
+.form-field { display: flex; flex-direction: column; gap: .38rem; }
+
+.form-label {
+    font-size: .8rem; font-weight: 600; color: var(--color-text);
+    display: flex; align-items: center; gap: .35rem;
+}
+.form-label .required-dot {
+    display: inline-block; width: 5px; height: 5px;
+    background: var(--color-primary); border-radius: 50%; flex-shrink: 0;
+}
+.form-label .hint {
+    margin-left: auto; font-size: .71rem; font-weight: 400; color: var(--color-text-muted);
+}
+
+.form-input, .form-textarea, .form-select {
+    width: 100%; padding: .62rem .9rem;
+    background: var(--color-bg); border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md); font: inherit; font-size: .875rem; color: var(--color-text);
+    transition: border-color .18s, box-shadow .18s; box-sizing: border-box;
+}
+.form-input::placeholder, .form-textarea::placeholder { color: var(--color-text-muted); }
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+    outline: none; border-color: rgba(196,111,75,.55);
+    box-shadow: 0 0 0 3px rgba(196,111,75,.12);
+}
+.form-input.is-invalid, .form-textarea.is-invalid, .form-select.is-invalid {
+    border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.1);
+}
+.form-input.is-valid, .form-textarea.is-valid, .form-select.is-valid {
+    border-color: #059669; box-shadow: 0 0 0 3px rgba(5,150,105,.08);
+}
+.form-textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+.select-wrap { position: relative; }
+.select-wrap::after {
+    content: ''; position: absolute; right: .85rem; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0;
+    border-left: 5px solid transparent; border-right: 5px solid transparent;
+    border-top: 6px solid var(--color-text-muted); pointer-events: none;
+}
+.form-select { appearance: none; -webkit-appearance: none; padding-right: 2.5rem; }
+
+.amount-wrap { position: relative; }
+.amount-wrap__prefix {
+    position: absolute; left: .9rem; top: 50%; transform: translateY(-50%);
+    font-size: .8rem; font-weight: 700; color: var(--color-text-muted);
+    pointer-events: none; user-select: none; z-index: 1;
+}
+.amount-wrap .form-input { padding-left: 2.8rem; }
+
+.char-counter { font-size: .71rem; color: var(--color-text-muted); text-align: right; transition: color .15s; }
+.char-counter.error { color: #dc2626; }
+.char-counter.ok    { color: #059669; }
+
+.field-error { font-size: .74rem; color: #dc2626; display: none; align-items: center; gap: .3rem; }
+.field-error.visible { display: flex; }
+
+.amount-preview {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .55rem .9rem; background: var(--color-surface-soft);
+    border: 1px solid var(--color-border); border-radius: var(--radius-md);
+    margin-top: .3rem; font-size: .78rem; color: var(--color-text-muted);
+}
+.amount-preview__value {
+    font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; color: var(--color-primary);
+}
+
+.status-group { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+.status-option { position: relative; }
+.status-option input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.status-label {
+    display: flex; align-items: center; gap: .65rem; padding: .7rem 1rem;
+    border-radius: var(--radius-md); border: 1.5px solid var(--color-border);
+    background: var(--color-bg); cursor: pointer; transition: all .18s; user-select: none;
+}
+.status-label:hover { border-color: rgba(196,111,75,.4); background: var(--color-hover); }
+.status-option input[type="radio"]:checked + .status-label {
+    border-color: var(--color-primary); background: rgba(196,111,75,.07);
+    box-shadow: 0 0 0 3px rgba(196,111,75,.12);
+}
+.status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.status-label__text { font-size: .85rem; font-weight: 600; color: var(--color-text); }
+.status-label__sub  { font-size: .71rem; color: var(--color-text-muted); }
+
+.form-footer {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: .65rem; padding: 1.1rem 1.75rem;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+.btn-cancel {
+    display: inline-flex; align-items: center;
+    padding: .55rem 1.2rem; border-radius: 999px; font-size: .86rem; font-weight: 600;
+    border: 1.5px solid var(--color-border); background: var(--color-bg);
+    color: var(--color-text-muted); cursor: pointer; text-decoration: none; transition: all .18s;
+}
+.btn-cancel:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.btn-submit {
+    display: inline-flex; align-items: center; gap: .5rem;
+    padding: .6rem 1.5rem; border-radius: 999px; font-size: .88rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: #fff; border: none; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(196,111,75,.3); transition: opacity .18s, transform .18s;
+}
+.btn-submit:hover { opacity: .88; transform: translateY(-1px); }
+
+@media(max-width: 600px) {
+    .form-row     { grid-template-columns: 1fr; }
+    .status-group { grid-template-columns: 1fr; }
+    .form-section { padding: 1.1rem; }
+    .form-footer  { flex-direction: column; }
+}
+</style>
+
+{{ form_start(form, {
+    'attr': { 'id': 'budgetForm', 'novalidate': 'novalidate' }
+}) }}
+
+<div class="budget-form-wrap">
+
+    {# ── Header ── #}
+    <div class="budget-form-header">
+        <div class="budget-form-header__bar"></div>
+        <div class="budget-form-header__text">
+            <h2>{{ button_label is defined and button_label == 'Modifier' ? 'Modifier le budget' : 'Nouveau budget' }}</h2>
+            <p>Renseignez les informations financières du budget</p>
+        </div>
+    </div>
+
+    {# ══ SECTION 1 — Voyage ══ #}
+    <div class="form-section">
+        <div class="form-section__title">Voyage associé</div>
+
+        <div class="form-field">
+            <label class="form-label" for="select-voyage">
+                <span class="required-dot"></span>
+                Voyage
+                <span class="hint">Sélectionnez le voyage concerné</span>
+            </label>
+            <div class="select-wrap">
+                <select class="form-select" id="select-voyage"
+                        name="budget[voyage]" required>
+                    <option value="">-- Choisir un voyage --</option>
+                    {% for v in voyages %}
+                        <option value="{{ v.idVoyage }}"
+                            {% if budget is defined and budget.voyage is not null and budget.voyage.idVoyage == v.idVoyage %}
+                                selected
+                            {% endif %}>
+                            {{ v.titreVoyage }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <span class="field-error" id="err-voyage">Veuillez sélectionner un voyage.</span>
+        </div>
+    </div>
+
+    {# ══ SECTION 2 — Informations générales ══ #}
+    <div class="form-section">
+        <div class="form-section__title">Informations générales</div>
+
+        <div class="form-field form-row--full" style="margin-bottom:1rem">
+            <label class="form-label" for="{{ form.libelleBudget.vars.id }}">
+                <span class="required-dot"></span>
+                Libellé
+                <span class="hint">max. 20 caractères</span>
+            </label>
+            {{ form_widget(form.libelleBudget, {
+                'attr': {
+                    'class': 'form-input',
+                    'placeholder': 'Ex : Hébergement Barcelone, Vols aller-retour…',
+                    'required': 'required',
+                    'maxlength': '20'
+                }
+            }) }}
+            <span class="char-counter" id="counter-libelle">0 / 20</span>
+            <span class="field-error" id="err-libelle">Le libellé ne doit pas dépasser 20 caractères.</span>
+        </div>
+
+        <div class="form-field form-row--full">
+            <label class="form-label" for="{{ form.descriptionBudget.vars.id }}">
+                <span class="required-dot"></span>
+                Description
+                <span class="hint">max. 100 caractères</span>
+            </label>
+            {{ form_widget(form.descriptionBudget, {
+                'attr': {
+                    'class': 'form-textarea',
+                    'placeholder': 'Décrivez les dépenses prévues, les postes budgétaires, les remarques importantes…',
+                    'required': 'required',
+                    'maxlength': '100',
+                    'rows': '4'
+                }
+            }) }}
+            <span class="char-counter" id="counter-desc">0 / 100</span>
+            <span class="field-error" id="err-desc">La description ne doit pas dépasser 100 caractères.</span>
+        </div>
+    </div>
+
+    {# ══ SECTION 3 — Montant & Devise ══ #}
+    <div class="form-section">
+        <div class="form-section__title">Montant et devise</div>
+
+        <div class="form-row">
+
+            <div class="form-field">
+                <label class="form-label" for="{{ form.montantTotal.vars.id }}">
+                    <span class="required-dot"></span>
+                    Montant total
+                    <span class="hint">supérieur à 0</span>
+                </label>
+                <div class="amount-wrap">
+                    <span class="amount-wrap__prefix" id="currencyPrefix">DT</span>
+                    {{ form_widget(form.montantTotal, {
+                        'attr': {
+                            'class': 'form-input',
+                            'placeholder': '0.00',
+                            'required': 'required',
+                            'min': '0.01',
+                            'step': '0.01'
+                        }
+                    }) }}
+                </div>
+                <span class="field-error" id="err-montant">Le montant doit être supérieur à 0.</span>
+                <div class="amount-preview" id="amountPreview" style="display:none">
+                    <span>Montant défini</span>
+                    <span class="amount-preview__value" id="amountDisplay">—</span>
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" for="select-devise">
+                    <span class="required-dot"></span>
+                    Devise
+                </label>
+                <div class="select-wrap">
+                    <select class="form-select" id="select-devise"
+                            name="{{ form.deviseBudget.vars.full_name }}" required>
+                        <option value="">-- Choisir --</option>
+                        {% set devises = [
+                            {code: 'TND', label: 'Dinar tunisien — TND'},
+                            {code: 'EUR', label: 'Euro — EUR'},
+                            {code: 'USD', label: 'Dollar américain — USD'},
+                            {code: 'GBP', label: 'Livre sterling — GBP'},
+                            {code: 'MAD', label: 'Dirham marocain — MAD'},
+                            {code: 'DZD', label: 'Dinar algérien — DZD'},
+                            {code: 'LYD', label: 'Dinar libyen — LYD'},
+                            {code: 'CHF', label: 'Franc suisse — CHF'},
+                            {code: 'CAD', label: 'Dollar canadien — CAD'},
+                            {code: 'AED', label: 'Dirham émirien — AED'},
+                            {code: 'SAR', label: 'Riyal saoudien — SAR'},
+                            {code: 'TRY', label: 'Livre turque — TRY'},
+                            {code: 'JPY', label: 'Yen japonais — JPY'},
+                            {code: 'CNY', label: 'Yuan chinois — CNY'}
+                        ] %}
+                        {% for d in devises %}
+                            <option value="{{ d.code }}"
+                                {% if budget is defined and budget.deviseBudget == d.code %}selected{% endif %}>
+                                {{ d.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <span class="field-error" id="err-devise">Veuillez choisir une devise.</span>
+            </div>
+
+        </div>
+    </div>
+
+    {# ══ SECTION 4 — Statut ══ #}
+    <div class="form-section">
+        <div class="form-section__title">Statut du budget</div>
+
+        <div class="form-field">
+            <label class="form-label">
+                <span class="required-dot"></span>
+                Statut
+            </label>
+
+            {% set currentStatut = (budget is defined and budget.statutBudget is not null)
+                ? budget.statutBudget : 'actif' %}
+
+            <div class="status-group">
+
+                <label class="status-option">
+                    <input type="radio" name="budget[statutBudget]" value="actif"
+                        {{ currentStatut == 'actif' ? 'checked' : '' }}>
+                    <span class="status-label">
+                        <span class="status-dot" style="background:#059669"></span>
+                        <span>
+                            <div class="status-label__text">Actif</div>
+                            <div class="status-label__sub">En cours de suivi</div>
+                        </span>
+                    </span>
+                </label>
+
+                <label class="status-option">
+                    <input type="radio" name="budget[statutBudget]" value="suspendu"
+                        {{ currentStatut == 'suspendu' ? 'checked' : '' }}>
+                    <span class="status-label">
+                        <span class="status-dot" style="background:#d97706"></span>
+                        <span>
+                            <div class="status-label__text">Suspendu</div>
+                            <div class="status-label__sub">Temporairement en pause</div>
+                        </span>
+                    </span>
+                </label>
+
+                <label class="status-option">
+                    <input type="radio" name="budget[statutBudget]" value="cloture"
+                        {{ currentStatut == 'cloture' ? 'checked' : '' }}>
+                    <span class="status-label">
+                        <span class="status-dot" style="background:#6b7280"></span>
+                        <span>
+                            <div class="status-label__text">Cloture</div>
+                            <div class="status-label__sub">Budget terminé, archivé</div>
+                        </span>
+                    </span>
+                </label>
+
+                <label class="status-option">
+                    <input type="radio" name="budget[statutBudget]" value="depasse"
+                        {{ currentStatut == 'depasse' ? 'checked' : '' }}>
+                    <span class="status-label">
+                        <span class="status-dot" style="background:#dc2626"></span>
+                        <span>
+                            <div class="status-label__text">Depasse</div>
+                            <div class="status-label__sub">Limite budgétaire franchie</div>
+                        </span>
+                    </span>
+                </label>
+
+            </div>
+            <span class="field-error" id="err-statut">Veuillez sélectionner un statut.</span>
+        </div>
+    </div>
+
+    {# ══ FOOTER ══ #}
+    <div class="form-footer">
+        <a href="{{ path('app_budget_index') }}" class="btn-cancel">Annuler</a>
+        <button type="submit" class="btn-submit">
+            {{ button_label|default('Enregistrer') }}
+        </button>
+    </div>
+
 </div>
 
-<div style="margin-bottom:1rem">
-    {{ form_label(form.montantTotal) }}
-    {{ form_widget(form.montantTotal) }}
-</div>
+{{ form_end(form, { render_rest: false }) }}
 
-<div style="margin-bottom:1rem">
-    {{ form_label(form.deviseBudget) }}
-    {{ form_widget(form.deviseBudget) }}
-</div>
+<script>
+(function () {
 
-<div style="margin-bottom:1rem">
-    {{ form_label(form.descriptionBudget) }}
-    {{ form_widget(form.descriptionBudget) }}
-</div>
+    /* ── Char counters ─────────────────── */
+    function initCounter(el, counterId, maxLen) {
+        if (!el) return;
+        const counter = document.getElementById(counterId);
+        const max = maxLen;
+        function update() {
+            const len = el.value.length;
+            counter.textContent = `${len} / ${max}`;
+            if (len === 0) {
+                counter.className = 'char-counter';
+            } else if (len > max) {
+                counter.className = 'char-counter error';
+            } else {
+                counter.className = 'char-counter ok';
+            }
+        }
+        el.addEventListener('input', update);
+        update();
+    }
 
-<button class="btn btn--primary">
-    {{ button_label|default('Enregistrer') }}
-</button>
+    const libelleInput = document.getElementById('{{ form.libelleBudget.vars.id }}');
+    const descInput    = document.getElementById('{{ form.descriptionBudget.vars.id }}');
+    const montantInput = document.getElementById('{{ form.montantTotal.vars.id }}');
+    const deviseSelect = document.getElementById('select-devise');
+    const voyageSelect = document.getElementById('select-voyage');
 
-{{ form_end(form) }}
+    initCounter(libelleInput, 'counter-libelle', 20);
+    initCounter(descInput,    'counter-desc',    100);
+
+    /* ── Currency prefix + amount preview ─ */
+    const symbolMap = {
+        TND:'DT', EUR:'€', USD:'$', GBP:'£', MAD:'DH',
+        DZD:'DA', LYD:'LD', CHF:'Fr', CAD:'C$',
+        AED:'AED', SAR:'SAR', TRY:'TL', JPY:'¥', CNY:'¥'
+    };
+
+    function updateAmount() {
+        const val = parseFloat(montantInput ? montantInput.value : 0) || 0;
+        const dev = deviseSelect ? (deviseSelect.options[deviseSelect.selectedIndex]?.value || '') : '';
+        const prefix = document.getElementById('currencyPrefix');
+        if (prefix) prefix.textContent = symbolMap[dev] || dev || 'DT';
+        const preview = document.getElementById('amountPreview');
+        const display = document.getElementById('amountDisplay');
+        if (preview && display) {
+            if (val > 0) {
+                display.textContent = val.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + (dev ? ' ' + dev : '');
+                preview.style.display = 'flex';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+    }
+    if (montantInput) montantInput.addEventListener('input', updateAmount);
+    if (deviseSelect) deviseSelect.addEventListener('change', updateAmount);
+    updateAmount();
+
+    /* ── Validation ─────────────────────── */
+    function validate(el, errorId, condition) {
+        if (!el) return true;
+        const ok = condition(el.value);
+        el.classList.toggle('is-invalid', !ok);
+        el.classList.toggle('is-valid',    ok);
+        const err = document.getElementById(errorId);
+        if (err) err.classList.toggle('visible', !ok);
+        return ok;
+    }
+
+    if (voyageSelect) voyageSelect.addEventListener('blur', () =>
+        validate(voyageSelect, 'err-voyage',  v => !!v));
+    
+    if (libelleInput) libelleInput.addEventListener('blur', () =>
+        validate(libelleInput, 'err-libelle', v => v.trim().length > 0 && v.trim().length <= 30));
+    
+    if (descInput) descInput.addEventListener('blur', () =>
+        validate(descInput, 'err-desc', v => v.trim().length > 0 && v.trim().length <= 100));
+    
+    if (montantInput) montantInput.addEventListener('blur', () =>
+        validate(montantInput, 'err-montant', v => parseFloat(v) > 0));
+    
+    if (deviseSelect) deviseSelect.addEventListener('blur', () =>
+        validate(deviseSelect, 'err-devise', v => !!v));
+
+    /* ── Submit guard ───────────────────── */
+    const budgetForm = document.getElementById('budgetForm');
+    if (budgetForm) {
+        budgetForm.addEventListener('submit', function (e) {
+            let ok = true;
+            ok = validate(voyageSelect, 'err-voyage',  v => !!v) && ok;
+            ok = validate(libelleInput, 'err-libelle', v => v.trim().length > 0 && v.trim().length <= 30) && ok;
+            ok = validate(descInput,    'err-desc',    v => v.trim().length > 0 && v.trim().length <= 100) && ok;
+            ok = validate(montantInput, 'err-montant', v => parseFloat(v) > 0) && ok;
+            ok = validate(deviseSelect, 'err-devise',  v => !!v) && ok;
+
+            const radios  = budgetForm.querySelectorAll('input[type="radio"][name="budget[statutBudget]"]');
+            const checked = [...radios].some(r => r.checked);
+            const errStat = document.getElementById('err-statut');
+            if (errStat) errStat.classList.toggle('visible', !checked);
+            ok = ok && checked;
+
+            if (!ok) e.preventDefault();
+        });
+    }
+
+})();
+</script>

@@ -1,0 +1,112 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Détails du budget{% endblock %}
+
+{% block body %}
+
+<div class="admin-page-header">
+    <div>
+        <span class="admin-page-header__eyebrow">Budget</span>
+        <h1 class="admin-page-header__title">
+            {{ budget.libelleBudget }}
+        </h1>
+        <p class="admin-page-header__desc">
+            Voyage : {{ budget.voyage ? budget.voyage.titreVoyage : 'N/A' }}
+        </p>
+    </div>
+</div>
+
+
+<div class="admin-grid admin-grid--4">
+
+    <div class="admin-kpi">
+        <div>
+            <span class="admin-kpi__label">Budget total</span>
+            <span class="admin-kpi__value">
+                {{ budget.montantTotal }} {{ budget.deviseBudget }}
+            </span>
+        </div>
+    </div>
+
+    <div class="admin-kpi">
+        <div>
+            <span class="admin-kpi__label">Total dépensé</span>
+            <span class="admin-kpi__value">
+                {{ totalDepenses }} {{ budget.deviseBudget }}
+            </span>
+        </div>
+    </div>
+
+    <div class="admin-kpi">
+        <div>
+            <span class="admin-kpi__label">Reste</span>
+            <span class="admin-kpi__value">
+                {{ reste }} {{ budget.deviseBudget }}
+            </span>
+        </div>
+    </div>
+
+    <div class="admin-kpi">
+        <div>
+            <span class="admin-kpi__label">Nombre de dépenses</span>
+            <span class="admin-kpi__value">
+                {{ nbDepenses }}
+            </span>
+        </div>
+    </div>
+
+</div>
+
+
+<div class="admin-card">
+
+    <div class="admin-card__header">
+        <h3 class="admin-card__title">Liste des dépenses</h3>
+    </div>
+
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+
+            <thead>
+                <tr>
+                    <th>Libellé</th>
+                    <th>Catégorie</th>
+                    <th>Montant</th>
+                    <th>Paiement</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+            {% for depense in depenses %}
+
+                <tr>
+                    <td>{{ depense.libelleDepense }}</td>
+                    <td>{{ depense.categorieDepense }}</td>
+                    <td>
+                        {{ depense.montantDepense }}
+                        {{ depense.deviseDepense }}
+                    </td>
+                    <td>{{ depense.typePaiement }}</td>
+                    <td>{{ depense.dateCreation|date('d/m/Y') }}</td>
+                </tr>
+
+            {% else %}
+
+                <tr>
+                    <td colspan="5" class="admin-empty">
+                        Aucune dépense enregistrée
+                    </td>
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+    </div>
+
+</div>
+
+{% endblock %}

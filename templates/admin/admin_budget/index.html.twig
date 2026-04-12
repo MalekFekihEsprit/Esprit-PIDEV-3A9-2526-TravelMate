@@ -1,0 +1,118 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Budgets{% endblock %}
+
+{% block body %}
+
+<div class="admin-page-header">
+
+    <div>
+        <span class="admin-page-header__eyebrow">Gestion</span>
+        <h1 class="admin-page-header__title">
+            Budgets des voyages
+        </h1>
+
+        <p class="admin-page-header__desc">
+            Visualisez et gérez les budgets associés aux voyages.
+        </p>
+    </div>
+
+</div>
+
+
+<div class="admin-card">
+
+    <div class="admin-card__header">
+        <h3 class="admin-card__title">Liste des budgets</h3>
+    </div>
+
+    <div class="admin-table-wrap">
+
+        <table class="admin-table">
+
+            <thead>
+                <tr>
+                    <th>Budget</th>
+                    <th>Voyage</th>
+                    <th>Montant</th>
+                    <th>Devise</th>
+                    <th>Statut</th>
+                    <th>Dépenses</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+            {% for budget in budgets %}
+
+                <tr>
+
+                    <td>
+                        <strong>{{ budget.libelleBudget }}</strong>
+                    </td>
+
+                    <td>
+                        {{ budget.voyage ? budget.voyage.titreVoyage : '—' }}
+                    </td>
+
+                    <td>
+                        {{ budget.montantTotal }}
+                    </td>
+
+                    <td>
+                        {{ budget.deviseBudget }}
+                    </td>
+
+                    <td>
+
+                        {% if budget.statutBudget == 'actif' %}
+                            <span class="status-pill status-pill--success">
+                                Actif
+                            </span>
+                        {% elseif budget.statutBudget == 'termine' %}
+                            <span class="status-pill status-pill--warning">
+                                Terminé
+                            </span>
+                        {% else %}
+                            <span class="status-pill status-pill--danger">
+                                Inactif
+                            </span>
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {{ budget.depenses|length }}
+                    </td>
+
+                    <td>
+
+                        <a href="{{ path('admin_budget_show', {'id': budget.idBudget}) }}"
+                           class="btn btn--ghost">
+                            Voir
+                        </a>
+
+                    </td>
+
+                </tr>
+
+            {% else %}
+
+                <tr>
+                    <td colspan="7" class="admin-empty">
+                        Aucun budget trouvé
+                    </td>
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}
