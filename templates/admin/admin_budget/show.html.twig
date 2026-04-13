@@ -1,72 +1,217 @@
 {% extends 'base_admin.html.twig' %}
+{% block title %}{{ budget.libelleBudget }} — Détail{% endblock %}
 
-{% block title %}Détails du budget{% endblock %}
+{% block stylesheets %}
+{{ parent() }}
+<style>
+.anim { animation: fadeUp .4s ease both; }
+
+.amt-pos { color:var(--admin-success); font-weight:700; }
+.amt-neg { color:var(--admin-danger); font-weight:700; }
+
+.leader-item {
+    display:flex;
+    justify-content:space-between;
+    padding:.6rem .8rem;
+    border-radius:10px;
+    margin-bottom:.4rem;
+    background:rgba(0,0,0,.03);
+}
+.leader-item.top1 { background:rgba(196,111,75,.12); }
+
+.admin-table tbody tr:hover {
+    background:rgba(196,111,75,.05);
+}
+</style>
+{% endblock %}
 
 {% block body %}
 
-<div class="admin-page-header">
+{# ── 🔙 BOUTON RETOUR ── #}
+<div style="margin-bottom:1rem;">
+    {% if budget.voyage %}
+        <a href="{{ path('admin_budget_index', {'voyage': budget.voyage.idVoyage}) }}"
+           style="
+            display:inline-flex;
+            align-items:center;
+            gap:.5rem;
+            padding:.5rem 1rem;
+            border-radius:10px;
+            background:rgba(196,111,75,.08);
+            color:var(--admin-primary);
+            font-weight:600;
+            text-decoration:none;
+            transition:.2s;
+           "
+           onmouseover="this.style.background='rgba(196,111,75,.15)'"
+           onmouseout="this.style.background='rgba(196,111,75,.08)'"
+        >
+            ← Retour aux budgets du voyage
+        </a>
+    {% else %}
+        <a href="{{ path('admin_budget_index') }}"
+           style="
+            display:inline-flex;
+            align-items:center;
+            gap:.5rem;
+            padding:.5rem 1rem;
+            border-radius:10px;
+            background:rgba(196,111,75,.08);
+            color:var(--admin-primary);
+            font-weight:600;
+            text-decoration:none;
+           "
+        >
+            ← Retour aux budgets
+        </a>
+    {% endif %}
+</div>
+
+{# ── Calculs ── #}
+{% set montantMax = 0 %}
+{% set libelleMax = '' %}
+{% for d in depenses %}
+    {% if d.montantDepense > montantMax %}
+        {% set montantMax = d.montantDepense %}
+        {% set libelleMax = d.libelleDepense %}
+    {% endif %}
+{% endfor %}
+
+{% set topCatNom = '' %}
+{% set topCatVal = 0 %}
+{% for cat,v in parCategorie %}
+    {% if v > topCatVal %}
+        {% set topCatVal = v %}
+        {% set topCatNom = cat %}
+    {% endif %}
+{% endfor %}
+
+{# ── HEADER ── #}
+<div class="admin-page-header anim" style="margin-bottom:1rem;">
     <div>
-        <span class="admin-page-header__eyebrow">Budget</span>
-        <h1 class="admin-page-header__title">
-            {{ budget.libelleBudget }}
-        </h1>
-        <p class="admin-page-header__desc">
-            Voyage : {{ budget.voyage ? budget.voyage.titreVoyage : 'N/A' }}
-        </p>
+        <span class="admin-page-header__eyebrow">Budget · {{ budget.deviseBudget }}</span>
+        <h1 class="admin-page-header__title">{{ budget.libelleBudget }}</h1>
     </div>
 </div>
 
-
-<div class="admin-grid admin-grid--4">
-
+{# ── KPIs ── #}
+<div class="admin-grid admin-grid--4 anim" style="margin-bottom:1rem;">
+    <div class="admin-kpi">💰 {{ budget.montantTotal|number_format(0,',',' ') }} {{ budget.deviseBudget }}</div>
+    <div class="admin-kpi">📤 {{ totalDepenses|number_format(0,',',' ') }} {{ budget.deviseBudget }}</div>
     <div class="admin-kpi">
-        <div>
-            <span class="admin-kpi__label">Budget total</span>
-            <span class="admin-kpi__value">
-                {{ budget.montantTotal }} {{ budget.deviseBudget }}
-            </span>
-        </div>
+        🏦 
+        <span class="{{ reste < 0 ? 'amt-neg' : 'amt-pos' }}">
+            {{ reste|number_format(0,',',' ') }}
+        </span>
     </div>
-
-    <div class="admin-kpi">
-        <div>
-            <span class="admin-kpi__label">Total dépensé</span>
-            <span class="admin-kpi__value">
-                {{ totalDepenses }} {{ budget.deviseBudget }}
-            </span>
-        </div>
-    </div>
-
-    <div class="admin-kpi">
-        <div>
-            <span class="admin-kpi__label">Reste</span>
-            <span class="admin-kpi__value">
-                {{ reste }} {{ budget.deviseBudget }}
-            </span>
-        </div>
-    </div>
-
-    <div class="admin-kpi">
-        <div>
-            <span class="admin-kpi__label">Nombre de dépenses</span>
-            <span class="admin-kpi__value">
-                {{ nbDepenses }}
-            </span>
-        </div>
-    </div>
-
+    <div class="admin-kpi">🧾 {{ nbDepenses }}</div>
 </div>
 
-
-<div class="admin-card">
-
+{# ── 💡 SANTÉ DES BUDGETS ── #}
+{% if budgets is defined and budgets is not empty %}
+<div class="admin-card anim" style="margin-bottom:1rem;">
     <div class="admin-card__header">
-        <h3 class="admin-card__title">Liste des dépenses</h3>
+        <h3 class="admin-card__title">💡 Santé des budgets</h3>
+    </div>
+
+    <div style="padding:1rem;">
+        {% set danger = 0 %}
+        {% set safe = 0 %}
+        {% set depasse = 0 %}
+
+        {% for b in budgets %}
+            {% set spent = b.totalDepenses ?? 0 %}
+            {% set prog = b.montantTotal > 0 ? (spent / b.montantTotal) * 100 : 0 %}
+
+            {% if prog >= 100 %}
+                {% set depasse = depasse + 1 %}
+            {% elseif prog >= 80 %}
+                {% set danger = danger + 1 %}
+            {% else %}
+                {% set safe = safe + 1 %}
+            {% endif %}
+        {% endfor %}
+
+        <div style="display:flex;gap:1rem;">
+            <div>🔴 Dépassés : <strong>{{ depasse }}</strong></div>
+            <div>🟠 À risque : <strong>{{ danger }}</strong></div>
+            <div>🟢 Safe : <strong>{{ safe }}</strong></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# ── 🏆 TOP BUDGETS ── #}
+{% if budgets is defined and budgets is not empty %}
+<div class="admin-card anim" style="margin-bottom:1rem;">
+    <div class="admin-card__header">
+        <h3 class="admin-card__title">🏆 Top budgets</h3>
+    </div>
+
+    <div style="padding:1rem;">
+        {% set sortedBudgets = budgets|sort((a,b)=> (b.totalDepenses ?? 0) <=> (a.totalDepenses ?? 0)) %}
+
+        {% for b in sortedBudgets|slice(0,3) %}
+            <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;">
+                <div>
+                    {% if loop.index == 1 %}🥇
+                    {% elseif loop.index == 2 %}🥈
+                    {% elseif loop.index == 3 %}🥉
+                    {% endif %}
+                    {{ b.libelleBudget }}
+                </div>
+
+                <div>
+                    {{ (b.totalDepenses ?? 0)|number_format(0,',',' ') }}
+                    {{ b.deviseBudget }}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ── 🏆 LEADERBOARD CATÉGORIES ── #}
+<div class="admin-card anim" style="margin-bottom:1rem;">
+    <div class="admin-card__header">
+        <h3 class="admin-card__title">🏆 Catégories les plus dépensées</h3>
+    </div>
+
+    <div style="padding:1rem;">
+        {% set sortedCategories = parCategorie|sort((a,b)=> b <=> a) %}
+        {% set rank = 1 %}
+
+        {% for cat, montant in sortedCategories %}
+            <div class="leader-item {{ rank == 1 ? 'top1' }}">
+                <div>
+                    {% if rank == 1 %}🥇
+                    {% elseif rank == 2 %}🥈
+                    {% elseif rank == 3 %}🥉
+                    {% else %}#{{ rank }}
+                    {% endif %}
+                    {{ cat }}
+                </div>
+
+                <div>
+                    {{ montant|number_format(0,',',' ') }} {{ budget.deviseBudget }}
+                </div>
+            </div>
+
+            {% set rank = rank + 1 %}
+        {% else %}
+            <div>Aucune donnée</div>
+        {% endfor %}
+    </div>
+</div>
+
+{# ── TABLE ── #}
+<div class="admin-card anim">
+    <div class="admin-card__header">
+        <h3 class="admin-card__title">Dépenses ({{ nbDepenses }})</h3>
     </div>
 
     <div class="admin-table-wrap">
         <table class="admin-table">
-
             <thead>
                 <tr>
                     <th>Libellé</th>
@@ -78,35 +223,22 @@
             </thead>
 
             <tbody>
-
-            {% for depense in depenses %}
-
+            {% for d in depenses %}
                 <tr>
-                    <td>{{ depense.libelleDepense }}</td>
-                    <td>{{ depense.categorieDepense }}</td>
-                    <td>
-                        {{ depense.montantDepense }}
-                        {{ depense.deviseDepense }}
-                    </td>
-                    <td>{{ depense.typePaiement }}</td>
-                    <td>{{ depense.dateCreation|date('d/m/Y') }}</td>
+                    <td><strong>{{ d.libelleDepense }}</strong></td>
+                    <td>{{ d.categorieDepense }}</td>
+                    <td>{{ d.montantDepense|number_format(0,',',' ') }} {{ d.deviseDepense }}</td>
+                    <td>{{ d.typePaiement }}</td>
+                    <td>{{ d.dateCreation|date('d/m/Y') }}</td>
                 </tr>
-
             {% else %}
-
                 <tr>
-                    <td colspan="5" class="admin-empty">
-                        Aucune dépense enregistrée
-                    </td>
+                    <td colspan="5">Aucune dépense</td>
                 </tr>
-
             {% endfor %}
-
             </tbody>
-
         </table>
     </div>
-
 </div>
 
 {% endblock %}

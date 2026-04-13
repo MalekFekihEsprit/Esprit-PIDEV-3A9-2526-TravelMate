@@ -17,12 +17,19 @@
 .search-field {
     display:flex; align-items:center; gap:.45rem;
     background:var(--color-bg); border:1px solid var(--color-border);
-    border-radius:999px; padding:.48rem 1rem; min-width:220px;
+    border-radius:999px; padding:.48rem 1rem; min-width:240px;
     transition:border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .search-field:focus-within { border-color:rgba(196,111,75,.45); box-shadow:0 0 0 3px rgba(196,111,75,.1); }
 .search-field__input { border:none; outline:none; background:transparent; font:inherit; font-size:.88rem; color:var(--color-text); width:100%; }
 .search-field__input::placeholder { color:var(--color-text-muted); }
+.search-clear {
+    background:none; border:none; cursor:pointer; color:var(--color-text-muted);
+    font-size:1rem; line-height:1; padding:0; display:none; flex-shrink:0;
+    transition:color .15s;
+}
+.search-clear:hover { color:var(--color-primary); }
+.search-clear.visible { display:block; }
 
 .filter-select {
     appearance:none; -webkit-appearance:none;
@@ -53,6 +60,32 @@
 }
 .btn-export:hover { border-color:var(--color-primary); color:var(--color-primary); background:var(--color-hover); }
 
+/* ── SELECTION TOOLBAR ───────────────────────── */
+.selection-bar {
+    display:none; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.65rem;
+    padding:.75rem 1.15rem; margin-bottom:1rem;
+    background:rgba(196,111,75,.08); border:1.5px solid rgba(196,111,75,.3);
+    border-radius:var(--radius-lg); animation:slideDown .2s ease;
+}
+.selection-bar.visible { display:flex; }
+.selection-bar__info { display:flex; align-items:center; gap:.7rem; font-size:.88rem; font-weight:600; color:var(--color-primary-dark); }
+.selection-bar__count {
+    background:var(--color-primary); color:#fff;
+    border-radius:999px; padding:.15rem .65rem; font-size:.78rem; font-weight:700;
+}
+.selection-bar__actions { display:flex; gap:.5rem; align-items:center; }
+.btn-sel {
+    display:inline-flex; align-items:center; gap:.35rem;
+    padding:.42rem .9rem; border-radius:999px; font-size:.82rem; font-weight:600;
+    border:1.5px solid; cursor:pointer; transition:all .18s; font-family:inherit;
+}
+.btn-sel--cancel { border-color:var(--color-border); background:var(--color-bg); color:var(--color-text-muted); }
+.btn-sel--cancel:hover { border-color:var(--color-primary); color:var(--color-primary); }
+.btn-sel--delete { border-color:#dc2626; background:#fee2e2; color:#b91c1c; }
+.btn-sel--delete:hover { background:#dc2626; color:#fff; }
+.btn-sel--select-all { border-color:var(--color-border); background:var(--color-bg); color:var(--color-text-muted); font-size:.78rem; }
+.btn-sel--select-all:hover { border-color:var(--color-primary); color:var(--color-primary); }
+
 /* ── SUMMARY BAR ─────────────────────── */
 .summary-bar { display:grid; grid-template-columns:repeat(auto-fit, minmax(155px,1fr)); gap:.85rem; margin-bottom:1.75rem; }
 .summary-card { background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md); padding:.95rem 1.15rem; }
@@ -66,17 +99,44 @@
     display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.5rem;
 }
 
+/* ── LAYOUT WITH DETAIL PANEL ────────── */
+.budget-layout { display:grid; grid-template-columns:1fr; gap:1.5rem; transition:grid-template-columns .3s ease; }
+.budget-layout.with-detail { grid-template-columns:1fr 340px; }
+
 /* ── GRID ────────────────────────────── */
 .act-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:1.25rem; }
+.budget-layout.with-detail .act-grid { grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); }
 
 /* ── CARD ────────────────────────────── */
 .act-card {
     display:flex; flex-direction:column;
     background:var(--color-surface); border:1px solid var(--color-border);
     border-radius:var(--radius-lg); overflow:hidden;
-    transition:transform var(--transition-base), box-shadow var(--transition-base);
+    transition:transform var(--transition-base), box-shadow var(--transition-base), border-color .18s;
+    cursor:pointer; position:relative;
 }
 .act-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px var(--color-shadow); }
+.act-card.selected { border-color:var(--color-primary); box-shadow:0 0 0 3px rgba(196,111,75,.18); transform:none; }
+.act-card.active-detail { border-color:var(--color-primary); box-shadow:0 0 0 3px rgba(196,111,75,.25); }
+
+/* Selection checkbox overlay */
+.card-checkbox-wrap {
+    position:absolute; top:.6rem; left:.6rem; z-index:10;
+    opacity:0; transition:opacity .18s; pointer-events:none;
+}
+.act-card:hover .card-checkbox-wrap,
+.act-card.selected .card-checkbox-wrap,
+.select-mode .card-checkbox-wrap { opacity:1; pointer-events:auto; }
+.card-checkbox {
+    width:20px; height:20px; border-radius:5px;
+    border:2px solid var(--color-primary); background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:all .15s;
+    box-shadow:0 1px 4px rgba(0,0,0,.15);
+}
+.act-card.selected .card-checkbox { background:var(--color-primary); }
+.card-checkbox::after { content:''; display:none; width:5px; height:9px; border:2px solid #fff; border-top:none; border-left:none; transform:rotate(45deg) translateY(-1px); }
+.act-card.selected .card-checkbox::after { display:block; }
 
 .act-card__img-wrap {
     position:relative; height:110px;
@@ -102,7 +162,6 @@
 .act-price-label { font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; color:var(--color-text-muted); margin-bottom:.1rem; }
 .act-price-value { font-family:'Fraunces',serif; font-size:1.05rem; font-weight:600; color:var(--color-primary); }
 
-/* Card action buttons */
 .act-card__actions { display:flex; align-items:center; gap:.4rem; flex-shrink:0; }
 .act-card__btn {
     width:32px; height:32px; border-radius:50%;
@@ -156,25 +215,100 @@
 .hero-stat__num   { font-family:'Fraunces',serif; font-size:2.6rem; font-weight:600; line-height:1; }
 .hero-stat__label { font-size:.76rem; text-transform:uppercase; letter-spacing:.1em; opacity:.65; }
 
+/* ══ DETAIL PANEL ══════════════════════ */
+.detail-panel {
+    display:none;
+    background:var(--color-surface); border:1px solid var(--color-border);
+    border-radius:var(--radius-lg); overflow:hidden;
+    position:sticky; top:1.5rem; max-height:85vh; overflow-y:auto;
+    animation:slideInRight .25s ease;
+}
+.detail-panel.visible { display:block; }
+@keyframes slideInRight { from { opacity:0; transform:translateX(16px); } to { opacity:1; transform:none; } }
+
+.dp-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1rem 1.25rem; background:linear-gradient(135deg,#3b2a1a,var(--color-primary));
+    color:#fff; position:sticky; top:0; z-index:5;
+}
+.dp-header__title { font-family:'Fraunces',serif; font-size:1rem; font-weight:600; line-height:1.3; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dp-close {
+    width:28px; height:28px; border-radius:50%;
+    border:1.5px solid rgba(255,255,255,.4); background:rgba(255,255,255,.1);
+    cursor:pointer; font-size:.9rem; color:#fff;
+    display:flex; align-items:center; justify-content:center; transition:all .15s; flex-shrink:0;
+}
+.dp-close:hover { background:rgba(255,255,255,.22); }
+
+.dp-progress-wrap { padding:.85rem 1.15rem; border-bottom:1px solid var(--color-border); background:var(--color-bg); }
+.dp-progress-labels { display:flex; justify-content:space-between; font-size:.72rem; color:var(--color-text-muted); margin-bottom:.4rem; font-weight:600; }
+.dp-progress-track { height:6px; background:var(--color-surface-soft); border-radius:99px; overflow:hidden; }
+.dp-progress-fill { height:100%; border-radius:99px; background:var(--color-primary); transition:width .5s ease; }
+.dp-progress-fill--over { background:#dc2626; }
+.dp-progress-fill--warn { background:#d97706; }
+
+.dp-stats { display:grid; grid-template-columns:1fr 1fr; gap:0; border-bottom:1px solid var(--color-border); }
+.dp-stat { padding:.75rem 1rem; border-right:1px solid var(--color-border); }
+.dp-stat:nth-child(2n) { border-right:none; }
+.dp-stat__label { font-size:.62rem; text-transform:uppercase; letter-spacing:.08em; color:var(--color-text-muted); font-weight:600; margin-bottom:.18rem; }
+.dp-stat__value { font-family:'Fraunces',serif; font-size:.95rem; font-weight:600; color:var(--color-text); }
+.dp-stat__value--primary { color:var(--color-primary); }
+.dp-stat__value--danger  { color:#dc2626; }
+.dp-stat__value--success { color:#059669; }
+
+.dp-depenses-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:.7rem 1.15rem; background:var(--color-bg); border-bottom:1px solid var(--color-border);
+}
+.dp-depenses-title { font-size:.7rem; text-transform:uppercase; letter-spacing:.1em; font-weight:700; color:var(--color-primary); display:flex; align-items:center; gap:.4rem; }
+.dp-badge { background:rgba(196,111,75,.12); color:var(--color-primary); font-size:.65rem; font-weight:700; padding:.12rem .45rem; border-radius:999px; }
+
+.dp-dep-list { list-style:none; margin:0; padding:0; }
+.dp-dep-item {
+    display:flex; align-items:center; gap:.65rem;
+    padding:.7rem 1.15rem; border-bottom:1px solid var(--color-border);
+    transition:background .15s;
+}
+.dp-dep-item:last-child { border-bottom:none; }
+.dp-dep-item:hover { background:var(--color-hover); }
+.dp-dep-icon {
+    width:32px; height:32px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.9rem; flex-shrink:0;
+}
+.dp-dep-body { flex:1; min-width:0; }
+.dp-dep-label { font-size:.82rem; font-weight:600; color:var(--color-text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dp-dep-meta  { font-size:.7rem; color:var(--color-text-muted); margin-top:.1rem; }
+.dp-dep-amount { font-family:'Fraunces',serif; font-size:.88rem; font-weight:600; color:var(--color-text); white-space:nowrap; flex-shrink:0; }
+
+.dp-empty { padding:2rem 1.15rem; text-align:center; color:var(--color-text-muted); font-size:.85rem; }
+
+.dp-actions {
+    padding:.85rem 1.15rem; display:flex; flex-direction:column; gap:.45rem;
+    border-top:1px solid var(--color-border); background:var(--color-bg);
+}
+.dp-btn {
+    display:flex; align-items:center; gap:.55rem;
+    padding:.6rem .95rem; border-radius:var(--radius-md);
+    font-size:.84rem; font-weight:600; text-decoration:none;
+    border:none; cursor:pointer; transition:all .18s;
+    width:100%; text-align:left; font-family:inherit;
+}
+.dp-btn--view   { background:var(--color-primary); color:#fff; }
+.dp-btn--view:hover { opacity:.88; }
+.dp-btn--edit   { background:rgba(196,111,75,.1); color:var(--color-primary-dark); border:1.5px solid rgba(196,111,75,.2); }
+.dp-btn--edit:hover { background:rgba(196,111,75,.18); }
+.dp-btn--delete { background:rgba(220,38,38,.07); color:#b91c1c; border:1.5px solid rgba(220,38,38,.18); }
+.dp-btn--delete:hover { background:rgba(220,38,38,.13); }
+
 /* ══ PAGINATION ══════════════════════════════════════════════ */
 .pagination-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: .5rem;
-    margin-top: 2rem;
-    padding: 1.25rem;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    flex-wrap: wrap;
+    display: flex; align-items: center; justify-content: center;
+    gap: .5rem; margin-top: 2rem; padding: 1.25rem;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); flex-wrap: wrap;
 }
-.pag-info {
-    font-size: .82rem;
-    color: var(--color-text-muted);
-    margin: 0 .75rem;
-    white-space: nowrap;
-}
+.pag-info { font-size: .82rem; color: var(--color-text-muted); margin: 0 .75rem; white-space: nowrap; }
 .pag-btn {
     min-width: 36px; height: 36px; padding: 0 .6rem;
     display: inline-flex; align-items: center; justify-content: center;
@@ -188,18 +322,71 @@
 .pag-btn:disabled { opacity: .35; cursor: not-allowed; }
 .pag-ellipsis { color: var(--color-text-muted); padding: 0 .3rem; font-size: .85rem; }
 
+/* ── BULK DELETE MODAL ───────────────── */
+.modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.45);
+    backdrop-filter:blur(3px); z-index:1000;
+    display:none; align-items:center; justify-content:center; padding:1rem;
+}
+.modal-overlay.open { display:flex; animation:fadeIn .2s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal {
+    background:var(--color-surface); border-radius:var(--radius-xl);
+    border:1px solid var(--color-border);
+    box-shadow:0 24px 64px rgba(0,0,0,.25);
+    width:100%; max-width:440px;
+    animation:slideUp .25s ease;
+}
+@keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+.modal__header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1.1rem 1.5rem; border-bottom:1px solid var(--color-border);
+}
+.modal__title { font-family:'Fraunces',serif; font-size:1.1rem; font-weight:600; color:var(--color-text); }
+.modal__close {
+    width:30px; height:30px; border-radius:50%; border:1.5px solid var(--color-border);
+    background:var(--color-bg); cursor:pointer; font-size:.9rem; color:var(--color-text-muted);
+    display:flex; align-items:center; justify-content:center; transition:all .15s;
+}
+.modal__close:hover { border-color:#dc2626; color:#dc2626; background:#fee2e2; }
+.modal__body { padding:1.5rem; }
+.modal__footer {
+    display:flex; align-items:center; justify-content:flex-end; gap:.65rem;
+    padding:1rem 1.5rem; border-top:1px solid var(--color-border); background:var(--color-bg);
+    border-radius:0 0 var(--radius-xl) var(--radius-xl);
+}
+.btn-modal-cancel {
+    padding:.52rem 1.15rem; border-radius:999px; font-size:.86rem; font-weight:600;
+    border:1.5px solid var(--color-border); background:var(--color-surface);
+    color:var(--color-text-muted); cursor:pointer; transition:all .18s; font-family:inherit;
+}
+.btn-modal-cancel:hover { border-color:var(--color-primary); color:var(--color-primary); }
+.btn-modal-submit--danger {
+    padding:.56rem 1.4rem; border-radius:999px; font-size:.88rem; font-weight:700;
+    background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff;
+    border:none; cursor:pointer; box-shadow:0 4px 14px rgba(220,38,38,.3);
+    transition:opacity .18s; font-family:inherit;
+}
+.btn-modal-submit--danger:hover { opacity:.88; }
+
 /* print */
 @media print {
     .toolbar, .act-hero, .app-navbar, .site-footer,
-    .act-card__actions, .results-meta, .pagination-wrap { display:none !important; }
+    .act-card__actions, .results-meta, .pagination-wrap,
+    .selection-bar, .detail-panel { display:none !important; }
     body { background:#fff !important; }
     .act-grid { grid-template-columns:repeat(3,1fr) !important; gap:.5rem !important; }
     .act-card { break-inside:avoid; box-shadow:none; }
     .summary-bar { grid-template-columns:repeat(4,1fr); }
     .app-main { padding-top:0 !important; }
+    .budget-layout { grid-template-columns:1fr !important; }
 }
 
 /* responsive */
+@media(max-width:900px) {
+    .budget-layout.with-detail { grid-template-columns:1fr; }
+    .detail-panel { position:relative; top:0; max-height:none; }
+}
 @media(max-width:700px) {
     .act-hero { flex-direction:column; }
     .act-hero__stats { flex-direction:row; border-left:none; border-top:1px solid rgba(255,255,255,.15); padding:1rem 1.5rem; justify-content:flex-start; gap:2rem; }
@@ -207,6 +394,8 @@
     .toolbar  { flex-direction:column; align-items:stretch; }
     .toolbar__left, .toolbar__right { width:100%; }
 }
+
+@keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
 </style>
 {% endblock %}
 
@@ -281,7 +470,8 @@
     <div class="toolbar__left">
         <div class="search-field">
             <span>🔍</span>
-            <input type="search" id="searchInput" class="search-field__input" placeholder="Nom, voyage, devise…">
+            <input type="search" id="searchInput" class="search-field__input" placeholder="Nom, voyage, devise…" autocomplete="off">
+            <button class="search-clear" id="searchClear" title="Effacer la recherche">✕</button>
         </div>
         <div class="chip-group" id="deviseFilter">
             <span class="chip-label">Devise :</span>
@@ -312,20 +502,20 @@
                 <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
             </svg>
             Vue
-        </button>
-        <button class="btn-export" id="exportCsv">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            CSV
-        </button>
-        <button class="btn-export" id="exportPdf">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                <line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="15" y2="11"/>
-            </svg>
-            PDF
-        </button>
+        
+    </div>
+</div>
+
+{# ══ SELECTION BAR ══ #}
+<div class="selection-bar" id="selectionBar">
+    <div class="selection-bar__info">
+        <span class="selection-bar__count" id="selCount">0</span>
+        budget(s) sélectionné(s)
+    </div>
+    <div class="selection-bar__actions">
+        <button class="btn-sel btn-sel--select-all" id="btnSelectAll">☑ Tout sélectionner</button>
+        <button class="btn-sel btn-sel--cancel" id="btnCancelSel">✕ Annuler</button>
+        <button class="btn-sel btn-sel--delete" id="btnDeleteSel">🗑️ Supprimer la sélection</button>
     </div>
 </div>
 
@@ -334,100 +524,206 @@
     <span id="activeFiltersLabel" style="color:var(--color-primary);font-weight:600"></span>
 </div>
 
-{# ══ GRID ══════════════════════════════════ #}
-<div class="act-grid" id="budgetGrid">
+{# ══ LAYOUT: GRID + DETAIL PANEL ═══════ #}
+<div class="budget-layout" id="budgetLayout">
 
-{% for budget in budgets %}
-    {% set totalDepense = 0 %}
-    {% for dep in budget.depenses %}
-        {% set totalDepense = totalDepense + dep.montantDepense %}
-    {% endfor %}
-    {% set restant = budget.montantTotal - totalDepense %}
-    {% set isOver  = restant < 0 %}
-    {% set pct     = budget.montantTotal > 0 ? ((totalDepense / budget.montantTotal) * 100)|round(0) : 0 %}
+    {# ══ GRID ══════════════════════════════════ #}
+    <div>
+        <div class="act-grid" id="budgetGrid">
 
-    <div class="act-card"
-         data-name="{{ budget.libelleBudget|lower }}"
-         data-voyage="{{ budget.voyage ? budget.voyage.titreVoyage|lower : '' }}"
-         data-devise="{{ budget.deviseBudget ?? 'TND' }}"
-         data-statut="{{ isOver ? 'over' : 'ok' }}"
-         data-montant="{{ budget.montantTotal }}"
-         data-depenses="{{ budget.depenses|length }}"
-         data-restant="{{ restant }}">
+        {% for budget in budgets %}
+            {% set totalDepense = 0 %}
+            {% for dep in budget.depenses %}
+                {% set totalDepense = totalDepense + dep.montantDepense %}
+            {% endfor %}
+            {% set restant = budget.montantTotal - totalDepense %}
+            {% set isOver  = restant < 0 %}
+            {% set pct     = budget.montantTotal > 0 ? ((totalDepense / budget.montantTotal) * 100)|round(0) : 0 %}
 
-        <div class="act-card__img-wrap">
-            <div class="act-card__img-placeholder">💰</div>
-            <div class="act-card__badges">
-                <span class="badge badge--cat">{{ budget.deviseBudget ?? 'TND' }}</span>
-                {% if isOver %}<span class="badge badge--trending">Dépassé</span>{% endif %}
-            </div>
-        </div>
+            {# Build depenses JSON for detail panel #}
+            {% set depsJson = [] %}
+            {% for d in budget.depenses %}
+                {% set depsJson = depsJson|merge([{
+                    label: d.libelleDepense,
+                    montant: d.montantDepense,
+                    devise: d.deviseDepense ?? budget.deviseBudget ?? 'TND',
+                    categorie: d.categorieDepense,
+                    date: d.dateCreation|date('d/m/Y')
+                }]) %}
+            {% endfor %}
 
-        <div class="act-card__body">
-            <div class="act-card__name">{{ budget.libelleBudget }}</div>
-            {% if budget.voyage %}
-                <div class="act-card__location">📍 {{ budget.voyage.titreVoyage }}</div>
-            {% endif %}
-            <div class="act-card__tags">
-                <span class="tag">{{ budget.depenses|length }} dépenses</span>
-                <span class="tag {{ isOver ? 'tag--difficile' : 'tag--facile' }}">
-                    {{ isOver ? '⚠ Dépassé' : '✔ Contrôlé' }}
-                </span>
-            </div>
-            <div class="budget-progress" title="{{ pct }}% consommé">
-                <div class="budget-progress__fill {{ isOver ? 'budget-progress__fill--over' : '' }}"
-                     style="width:{{ pct > 100 ? 100 : pct }}%"></div>
-            </div>
-            <div style="font-size:.7rem;color:var(--color-text-muted);text-align:right;margin-top:.1rem">
-                {{ pct }}% consommé
-            </div>
+            <div class="act-card"
+                 data-id="{{ budget.idBudget }}"
+                 data-name="{{ budget.libelleBudget|lower }}"
+                 data-voyage="{{ budget.voyage ? budget.voyage.titreVoyage|lower : '' }}"
+                 data-devise="{{ budget.deviseBudget ?? 'TND' }}"
+                 data-statut="{{ isOver ? 'over' : 'ok' }}"
+                 data-montant="{{ budget.montantTotal }}"
+                 data-depenses="{{ budget.depenses|length }}"
+                 data-restant="{{ restant }}"
+                 data-pct="{{ pct }}"
+                 data-libelle="{{ budget.libelleBudget|e('html_attr') }}"
+                 data-description="{{ budget.descriptionBudget|e('html_attr') }}"
+                 data-voyage-title="{{ budget.voyage ? budget.voyage.titreVoyage|e('html_attr') : '' }}"
+                 data-statut-budget="{{ budget.statutBudget ?? 'actif' }}"
+                 data-total-depense="{{ totalDepense }}"
+                 data-is-over="{{ isOver ? '1' : '0' }}"
+                 data-url-show="{{ path('app_budget_show', {id: budget.idBudget}) }}"
+                 data-url-edit="{{ path('app_budget_edit', {id: budget.idBudget}) }}"
+                 data-url-delete="{{ path('app_budget_delete', {id: budget.idBudget}) }}"
+                 data-csrf-delete="{{ csrf_token('delete' ~ budget.idBudget) }}"
+                 data-deps="{{ depsJson|json_encode|e('html_attr') }}"
+                 onclick="handleCardClick(event, this)">
 
-            <div class="act-card__footer">
-                <div>
-                    <div class="act-price-label">Budget total</div>
-                    <div class="act-price-value">{{ budget.montantTotal }} {{ budget.deviseBudget ?? 'TND' }}</div>
-                    <div style="font-size:.78rem;color:var(--color-text-muted)">Dépensé : {{ totalDepense }}</div>
-                    <div style="font-size:.82rem;font-weight:600;color:{{ isOver ? '#dc2626' : 'var(--color-secondary)' }}">
-                        {{ isOver ? '↑ Excès : ' ~ restant|abs : '↓ Restant : ' ~ restant }}
+                {# Selection checkbox #}
+                <div class="card-checkbox-wrap">
+                    <div class="card-checkbox" title="Sélectionner"></div>
+                </div>
+
+                <div class="act-card__img-wrap">
+                    <div class="act-card__img-placeholder">💰</div>
+                    <div class="act-card__badges">
+                        <span class="badge badge--cat">{{ budget.deviseBudget ?? 'TND' }}</span>
+                        {% if isOver %}<span class="badge badge--trending">Dépassé</span>{% endif %}
                     </div>
                 </div>
-                {# Action buttons — View / Edit / Delete #}
-                <div class="act-card__actions">
-                    <a href="{{ path('app_budget_show', {id: budget.idBudget}) }}"
-                       class="act-card__btn act-card__btn--view" title="Voir le détail">→</a>
-                    <a href="{{ path('app_budget_edit', {id: budget.idBudget}) }}"
-                       class="act-card__btn act-card__btn--edit" title="Modifier">✏️</a>
-                    <button class="act-card__btn act-card__btn--delete"
-                            title="Supprimer"
-                            onclick="confirmDelete({{ budget.idBudget }}, '{{ budget.libelleBudget|e('js') }}')">🗑️</button>
+
+                <div class="act-card__body">
+                    <div class="act-card__name">{{ budget.libelleBudget }}</div>
+                    {% if budget.voyage %}
+                        <div class="act-card__location">📍 {{ budget.voyage.titreVoyage }}</div>
+                    {% endif %}
+                    <div class="act-card__tags">
+                        <span class="tag">{{ budget.depenses|length }} dépenses</span>
+                        <span class="tag {{ isOver ? 'tag--difficile' : 'tag--facile' }}">
+                            {{ isOver ? '⚠ Dépassé' : '✔ Contrôlé' }}
+                        </span>
+                    </div>
+                    <div class="budget-progress" title="{{ pct }}% consommé">
+                        <div class="budget-progress__fill {{ isOver ? 'budget-progress__fill--over' : '' }}"
+                             style="width:{{ pct > 100 ? 100 : pct }}%"></div>
+                    </div>
+                    <div style="font-size:.7rem;color:var(--color-text-muted);text-align:right;margin-top:.1rem">
+                        {{ pct }}% consommé
+                    </div>
+
+                    <div class="act-card__footer">
+                        <div>
+                            <div class="act-price-label">Budget total</div>
+                            <div class="act-price-value">{{ budget.montantTotal }} {{ budget.deviseBudget ?? 'TND' }}</div>
+                            <div style="font-size:.78rem;color:var(--color-text-muted)">Dépensé : {{ totalDepense }}</div>
+                            <div style="font-size:.82rem;font-weight:600;color:{{ isOver ? '#dc2626' : 'var(--color-secondary)' }}">
+                                {{ isOver ? '↑ Excès : ' ~ restant|abs : '↓ Restant : ' ~ restant }}
+                            </div>
+                        </div>
+                        <div class="act-card__actions" onclick="event.stopPropagation()">
+                            <a href="{{ path('app_budget_show', {id: budget.idBudget}) }}"
+                               class="act-card__btn act-card__btn--view" title="Voir le détail">→</a>
+                            <a href="{{ path('app_budget_edit', {id: budget.idBudget}) }}"
+                               class="act-card__btn act-card__btn--edit" title="Modifier">✏️</a>
+                            <button class="act-card__btn act-card__btn--delete"
+                                    title="Supprimer"
+                                    onclick="confirmDeleteOne(this)">🗑️</button>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state__icon">💸</div>
+                <div class="empty-state__title">Aucun budget pour l'instant</div>
+                <p>Créez votre premier budget pour commencer à suivre vos dépenses.</p>
+            </div>
+        {% endfor %}
+
         </div>
+
+        <div id="noResults" style="display:none;text-align:center;padding:3rem 1rem;color:var(--color-text-muted)">
+            <div style="font-size:2.5rem;margin-bottom:.75rem">🔍</div>
+            <div style="font-weight:700;font-size:1rem;color:var(--color-text);margin-bottom:.35rem">Aucun résultat</div>
+            <p>Essayez de modifier vos filtres ou votre recherche.</p>
+        </div>
+
+        <div class="pagination-wrap" id="paginationWrap"></div>
     </div>
 
-{% else %}
-    <div class="empty-state">
-        <div class="empty-state__icon">💸</div>
-        <div class="empty-state__title">Aucun budget pour l'instant</div>
-        <p>Créez votre premier budget pour commencer à suivre vos dépenses.</p>
+    {# ══ DETAIL PANEL ══ #}
+    <div class="detail-panel" id="detailPanel">
+        <div class="dp-header">
+            <span class="dp-header__title" id="dp-title">—</span>
+            <button class="dp-close" onclick="closeDetailPanel()" title="Fermer">✕</button>
+        </div>
+        <div class="dp-progress-wrap">
+            <div class="dp-progress-labels">
+                <span>0</span>
+                <span id="dp-pct-label">0%</span>
+                <span id="dp-montant-label">—</span>
+            </div>
+            <div class="dp-progress-track">
+                <div class="dp-progress-fill" id="dp-progress-fill" style="width:0%"></div>
+            </div>
+        </div>
+        <div class="dp-stats">
+            <div class="dp-stat">
+                <div class="dp-stat__label">Budget alloué</div>
+                <div class="dp-stat__value dp-stat__value--primary" id="dp-montant-total">—</div>
+            </div>
+            <div class="dp-stat">
+                <div class="dp-stat__label">Total dépensé</div>
+                <div class="dp-stat__value" id="dp-depense-total">—</div>
+            </div>
+            <div class="dp-stat">
+                <div class="dp-stat__label">Restant / Excès</div>
+                <div class="dp-stat__value" id="dp-restant">—</div>
+            </div>
+            <div class="dp-stat">
+                <div class="dp-stat__label">Nb dépenses</div>
+                <div class="dp-stat__value" id="dp-nb-dep">—</div>
+            </div>
+        </div>
+        <div class="dp-depenses-header">
+            <span class="dp-depenses-title">
+                📋 Dépenses
+                <span class="dp-badge" id="dp-dep-count">0</span>
+            </span>
+        </div>
+        <ul class="dp-dep-list" id="dp-dep-list"></ul>
+        <div class="dp-actions" id="dp-actions"></div>
     </div>
-{% endfor %}
 
 </div>
 
-{# Hidden delete form #}
+{# Hidden forms #}
 <form id="form-budget-delete" method="post" style="display:none">
     <input type="hidden" name="_token" id="budget-delete-token">
+    <input type="hidden" name="_method" value="DELETE">
 </form>
 
-<div id="noResults" style="display:none;text-align:center;padding:3rem 1rem;color:var(--color-text-muted)">
-    <div style="font-size:2.5rem;margin-bottom:.75rem">🔍</div>
-    <div style="font-weight:700;font-size:1rem;color:var(--color-text);margin-bottom:.35rem">Aucun résultat</div>
-    <p>Essayez de modifier vos filtres ou votre recherche.</p>
+{# ══ BULK DELETE MODAL ══ #}
+<div class="modal-overlay" id="modal-bulk-delete" onclick="if(event.target===this)closeBulkModal()">
+    <div class="modal">
+        <div class="modal__header">
+            <span class="modal__title">🗑️ Suppression groupée</span>
+            <button class="modal__close" onclick="closeBulkModal()">✕</button>
+        </div>
+        <div class="modal__body" style="text-align:center;padding:1.5rem">
+            <div style="font-size:2.5rem;margin-bottom:.75rem">⚠️</div>
+            <div style="font-weight:700;font-size:1rem;color:var(--color-text);margin-bottom:.6rem">
+                Confirmer la suppression
+            </div>
+            <p style="color:var(--color-text-muted);font-size:.88rem;margin:0 0 1rem">
+                Vous êtes sur le point de supprimer <strong id="bulk-count" style="color:#dc2626"></strong> budget(s) et toutes leurs dépenses associées.
+                <br><strong>Cette action est irréversible.</strong>
+            </p>
+            <div id="bulk-names" style="background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:.75rem 1rem;text-align:left;font-size:.82rem;color:var(--color-text-muted);max-height:120px;overflow-y:auto;"></div>
+        </div>
+        <div class="modal__footer">
+            <button class="btn-modal-cancel" onclick="closeBulkModal()">Annuler</button>
+            <button class="btn-modal-submit--danger" onclick="executeBulkDelete()">🗑️ Supprimer tout</button>
+        </div>
+    </div>
 </div>
-
-{# ══ PAGINATION ════════════════════════════ #}
-<div class="pagination-wrap" id="paginationWrap"></div>
 
 {% endblock %}
 
@@ -450,7 +746,29 @@ const noResults    = document.getElementById('noResults');
 const resultsCount = document.getElementById('resultsCount');
 const activeFilLbl = document.getElementById('activeFiltersLabel');
 const pagWrap      = document.getElementById('paginationWrap');
+const layout       = document.getElementById('budgetLayout');
+const detailPanel  = document.getElementById('detailPanel');
+const selBar       = document.getElementById('selectionBar');
 const allCards     = Array.from(document.querySelectorAll('.act-card'));
+
+/* ════════════════════════════════════════════════════════
+   SEARCH — DYNAMIC (instant filtering)
+════════════════════════════════════════════════════════ */
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+
+searchInput.addEventListener('input', e => {
+    state.search = e.target.value;
+    searchClear.classList.toggle('visible', state.search.length > 0);
+    resetAndApply();
+});
+searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    state.search = '';
+    searchClear.classList.remove('visible');
+    searchInput.focus();
+    resetAndApply();
+});
 
 /* ── Build devise chips ─────────────────────────── */
 (function() {
@@ -469,7 +787,6 @@ const allCards     = Array.from(document.querySelectorAll('.act-card'));
 function applyAll() {
     const q = state.search.toLowerCase().trim();
 
-    /* 1. Filter */
     let visible = allCards.filter(c => {
         const txt = !q || c.dataset.name.includes(q) || c.dataset.voyage.includes(q) || c.dataset.devise.toLowerCase().includes(q);
         const dev = state.devises.has('all') || state.devises.has(c.dataset.devise);
@@ -477,7 +794,6 @@ function applyAll() {
         return txt && dev && sta;
     });
 
-    /* 2. Sort */
     visible = [...visible].sort((a, b) => {
         switch (state.sort) {
             case 'name-asc':      return a.dataset.name.localeCompare(b.dataset.name);
@@ -492,19 +808,15 @@ function applyAll() {
         }
     });
 
-    /* 3. Clamp page */
     const totalPages = Math.max(1, Math.ceil(visible.length / PER_PAGE));
     if (state.page > totalPages) state.page = totalPages;
 
-    /* 4. Paginate */
     const start = (state.page - 1) * PER_PAGE;
     const pageItems = visible.slice(start, start + PER_PAGE);
 
-    /* 5. Show/hide cards */
     allCards.forEach(c => { c.style.display = 'none'; });
     pageItems.forEach(c => { c.style.display = ''; grid.appendChild(c); });
 
-    /* 6. Results label */
     const from = visible.length === 0 ? 0 : start + 1;
     const to   = Math.min(start + PER_PAGE, visible.length);
     resultsCount.innerHTML = visible.length === 0
@@ -521,35 +833,19 @@ function applyAll() {
     noResults.style.display  = visible.length === 0 ? 'block' : 'none';
     pagWrap.style.display    = visible.length <= PER_PAGE ? 'none' : 'flex';
 
-    /* 7. Render pagination */
     renderPagination(totalPages);
 }
 
-/* ── Pagination renderer ────────────────────────── */
 function renderPagination(total) {
     if (total <= 1) { pagWrap.innerHTML = ''; return; }
-
     let html = '';
-
-    /* Prev */
     html += `<button class="pag-btn" onclick="goPage(${state.page - 1})" ${state.page === 1 ? 'disabled' : ''}>‹ Préc.</button>`;
-
-    /* Page numbers with ellipsis */
-    const pages = buildPageRange(state.page, total);
-    pages.forEach(p => {
-        if (p === '…') {
-            html += `<span class="pag-ellipsis">…</span>`;
-        } else {
-            html += `<button class="pag-btn ${p === state.page ? 'active' : ''}" onclick="goPage(${p})">${p}</button>`;
-        }
+    buildPageRange(state.page, total).forEach(p => {
+        if (p === '…') html += `<span class="pag-ellipsis">…</span>`;
+        else html += `<button class="pag-btn ${p === state.page ? 'active' : ''}" onclick="goPage(${p})">${p}</button>`;
     });
-
-    /* Next */
     html += `<button class="pag-btn" onclick="goPage(${state.page + 1})" ${state.page === total ? 'disabled' : ''}>Suiv. ›</button>`;
-
-    /* Info */
     html += `<span class="pag-info">Page ${state.page} / ${total}</span>`;
-
     pagWrap.innerHTML = html;
 }
 
@@ -570,19 +866,10 @@ function buildPageRange(current, total) {
     return pages;
 }
 
-function goPage(p) {
-    state.page = p;
-    applyAll();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-/* ── Reset page on any filter/sort change ──────── */
+function goPage(p) { state.page = p; applyAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function resetAndApply() { state.page = 1; applyAll(); }
 
-/* ── Search ─────────────────────────────────────── */
-document.getElementById('searchInput').addEventListener('input', e => { state.search = e.target.value; resetAndApply(); });
-
-/* ── Devise chips ──────────────────────────────── */
+/* ── Filters ───────────────────────────────────────── */
 document.getElementById('deviseFilter').addEventListener('click', e => {
     const btn = e.target.closest('.chip[data-devise]');
     if (!btn) return;
@@ -597,7 +884,6 @@ document.getElementById('deviseFilter').addEventListener('click', e => {
     resetAndApply();
 });
 
-/* ── Statut chips ──────────────────────────────── */
 document.getElementById('statutFilter').addEventListener('click', e => {
     const btn = e.target.closest('.chip[data-statut]');
     if (!btn) return;
@@ -606,10 +892,8 @@ document.getElementById('statutFilter').addEventListener('click', e => {
     resetAndApply();
 });
 
-/* ── Sort ──────────────────────────────────────── */
 document.getElementById('sortSelect').addEventListener('change', e => { state.sort = e.target.value; resetAndApply(); });
 
-/* ── Toggle view ───────────────────────────────── */
 document.getElementById('toggleView').addEventListener('click', () => {
     state.view = state.view === 'grid' ? 'list' : 'grid';
     grid.style.gridTemplateColumns = state.view === 'list' ? '1fr' : '';
@@ -618,77 +902,430 @@ document.getElementById('toggleView').addEventListener('click', () => {
         : `<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>`;
 });
 
-/* ── Delete budget from card ───────────────────── */
-function confirmDelete(id, name) {
-    if (!confirm(`Supprimer le budget "${name}" et toutes ses dépenses ?`)) return;
-    const form  = document.getElementById('form-budget-delete');
-    const token = document.getElementById('budget-delete-token');
-    // Build CSRF token dynamically — Symfony route generates it
-    form.action = `/budget/${id}`;
-    token.name  = '_token';
-    // We need the real token; since we can't generate it here, redirect to show page instead
-    window.location.href = `/budget/${id}`;
+/* ════════════════════════════════════════════════════════
+   DETAIL PANEL
+════════════════════════════════════════════════════════ */
+let activeDetailCard = null;
+
+const CAT_ICON = {
+    'hébergement':'🏨','hebergement':'🏨','transport':'✈️',
+    'restauration':'🍽️','nourriture':'🍽️','loisirs':'🎭',
+    'activité':'🎭','achats':'🛍️','shopping':'🛍️','santé':'💊','sante':'💊'
+};
+const CAT_COLOR = {
+    'hébergement':'#fef3c7','hebergement':'#fef3c7','transport':'#dbeafe',
+    'restauration':'#d1fae5','nourriture':'#d1fae5','loisirs':'#ede9fe',
+    'activité':'#ede9fe','achats':'#fce7f3','shopping':'#fce7f3','santé':'#fee2e2','sante':'#fee2e2'
+};
+
+function openDetailPanel(card) {
+    if (activeDetailCard) activeDetailCard.classList.remove('active-detail');
+    activeDetailCard = card;
+    card.classList.add('active-detail');
+
+    const devise     = card.dataset.devise;
+    const montant    = parseFloat(card.dataset.montant);
+    const depensed   = parseFloat(card.dataset.totalDepense);
+    const restant    = parseFloat(card.dataset.restant);
+    const isOver     = card.dataset.isOver === '1';
+    const pct        = Math.min(parseInt(card.dataset.pct), 100);
+    const deps       = JSON.parse(card.dataset.deps || '[]');
+
+    document.getElementById('dp-title').textContent = card.dataset.libelle;
+    document.getElementById('dp-pct-label').textContent = isOver
+        ? `⚠ Dépassé de ${Math.abs(restant).toLocaleString('fr-FR')} ${devise}`
+        : `${card.dataset.pct}% consommé`;
+    document.getElementById('dp-montant-label').textContent = `${montant.toLocaleString('fr-FR')} ${devise}`;
+
+    const fill = document.getElementById('dp-progress-fill');
+    fill.style.width = pct + '%';
+    fill.className = 'dp-progress-fill' + (isOver ? ' dp-progress-fill--over' : (parseInt(card.dataset.pct) > 75 ? ' dp-progress-fill--warn' : ''));
+
+    document.getElementById('dp-montant-total').textContent = `${montant.toLocaleString('fr-FR')} ${devise}`;
+    document.getElementById('dp-depense-total').textContent = `${depensed.toLocaleString('fr-FR')} ${devise}`;
+
+    const restEl = document.getElementById('dp-restant');
+    restEl.textContent = (isOver ? '- ' : '+ ') + Math.abs(restant).toLocaleString('fr-FR') + ' ' + devise;
+    restEl.className = 'dp-stat__value ' + (isOver ? 'dp-stat__value--danger' : 'dp-stat__value--success');
+
+    document.getElementById('dp-nb-dep').textContent = deps.length;
+    document.getElementById('dp-dep-count').textContent = deps.length;
+
+    // Render depenses list
+    const list = document.getElementById('dp-dep-list');
+    if (deps.length === 0) {
+        list.innerHTML = '<li class="dp-empty">📭 Aucune dépense enregistrée</li>';
+    } else {
+        list.innerHTML = deps.map(d => {
+            const cat = (d.categorie || '').toLowerCase();
+            const icon = CAT_ICON[cat] || '💸';
+            const bg   = CAT_COLOR[cat] || 'var(--color-surface-soft)';
+            return `<li class="dp-dep-item">
+                <div class="dp-dep-icon" style="background:${bg}">${icon}</div>
+                <div class="dp-dep-body">
+                    <div class="dp-dep-label">${escHtml(d.label)}</div>
+                    <div class="dp-dep-meta">${escHtml(d.categorie)} · ${escHtml(d.date)}</div>
+                </div>
+                <div class="dp-dep-amount">${parseFloat(d.montant).toLocaleString('fr-FR',{minimumFractionDigits:2})} <small style="font-weight:400;color:var(--color-text-muted)">${escHtml(d.devise)}</small></div>
+            </li>`;
+        }).join('');
+    }
+
+    // Actions
+    document.getElementById('dp-actions').innerHTML = `
+        <a href="${card.dataset.urlShow}" class="dp-btn dp-btn--view">
+            <span>→</span> Voir le détail complet
+        </a>
+        <a href="${card.dataset.urlEdit}" class="dp-btn dp-btn--edit">
+            <span>✏️</span> Modifier le budget
+        </a>
+        <button class="dp-btn dp-btn--delete" onclick="confirmDeleteOneByCard(document.querySelector('.act-card.active-detail'))">
+            <span>🗑️</span> Supprimer ce budget
+        </button>
+    `;
+
+    layout.classList.add('with-detail');
+    detailPanel.classList.add('visible');
 }
 
-/* ── Export CSV ─────────────────────────────────── */
-document.getElementById('exportCsv').addEventListener('click', () => {
-    const vis  = allCards.filter(c => c.style.display !== 'none');
-    const rows = [['Nom','Devise','Montant total','Nb dépenses','Restant','Statut']];
-    vis.forEach(c => rows.push([
-        c.querySelector('.act-card__name').textContent.trim(),
-        c.dataset.devise, c.dataset.montant, c.dataset.depenses,
-        c.dataset.restant, c.dataset.statut === 'over' ? 'Dépassé' : 'Contrôlé'
-    ]));
-    const csv  = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
-    const a    = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'budgets_travelmate.csv' });
-    a.click(); URL.revokeObjectURL(a.href);
+function closeDetailPanel() {
+    if (activeDetailCard) activeDetailCard.classList.remove('active-detail');
+    activeDetailCard = null;
+    layout.classList.remove('with-detail');
+    detailPanel.classList.remove('visible');
+}
+
+function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ════════════════════════════════════════════════════════
+   MULTI-SELECTION
+════════════════════════════════════════════════════════ */
+let selectedIds = new Set();
+let selectMode  = false;
+
+function toggleSelectMode(on) {
+    selectMode = on;
+    grid.classList.toggle('select-mode', on);
+    selBar.classList.toggle('visible', on);
+    if (!on) {
+        selectedIds.clear();
+        allCards.forEach(c => c.classList.remove('selected'));
+        updateSelCount();
+    }
+}
+
+function toggleCardSelection(card) {
+    const id = card.dataset.id;
+    if (selectedIds.has(id)) {
+        selectedIds.delete(id);
+        card.classList.remove('selected');
+    } else {
+        selectedIds.add(id);
+        card.classList.add('selected');
+    }
+    if (selectedIds.size === 0) {
+        toggleSelectMode(false);
+    } else {
+        selectMode = true;
+        selBar.classList.add('visible');
+        updateSelCount();
+    }
+}
+
+function updateSelCount() {
+    document.getElementById('selCount').textContent = selectedIds.size;
+}
+
+function handleCardClick(e, card) {
+    // If clicking inside action buttons — let them handle it
+    if (e.target.closest('.act-card__actions')) return;
+
+    // If click on checkbox or in select mode — toggle selection
+    if (e.target.closest('.card-checkbox-wrap') || selectMode) {
+        toggleCardSelection(card);
+        return;
+    }
+
+    // Otherwise open detail panel
+    openDetailPanel(card);
+}
+
+document.getElementById('btnCancelSel').addEventListener('click', () => toggleSelectMode(false));
+document.getElementById('btnSelectAll').addEventListener('click', () => {
+    const visible = allCards.filter(c => c.style.display !== 'none');
+    const allSelected = visible.every(c => selectedIds.has(c.dataset.id));
+    if (allSelected) {
+        visible.forEach(c => { selectedIds.delete(c.dataset.id); c.classList.remove('selected'); });
+        if (selectedIds.size === 0) toggleSelectMode(false);
+    } else {
+        visible.forEach(c => { selectedIds.add(c.dataset.id); c.classList.add('selected'); });
+        selectMode = true;
+        selBar.classList.add('visible');
+    }
+    updateSelCount();
 });
 
-/* ── Export PDF ─────────────────────────────────── */
+document.getElementById('btnDeleteSel').addEventListener('click', () => {
+    if (selectedIds.size === 0) return;
+    const names = [...selectedIds].map(id => {
+        const c = document.querySelector(`.act-card[data-id="${id}"]`);
+        return c ? escHtml(c.dataset.libelle) : id;
+    });
+    document.getElementById('bulk-count').textContent = selectedIds.size;
+    document.getElementById('bulk-names').innerHTML = names.map(n => `<div>• ${n}</div>`).join('');
+    document.getElementById('modal-bulk-delete').classList.add('open');
+});
+
+function closeBulkModal() {
+    document.getElementById('modal-bulk-delete').classList.remove('open');
+}
+
+async function executeBulkDelete() {
+    closeBulkModal();
+    const ids = [...selectedIds];
+    for (const id of ids) {
+        const card = document.querySelector(`.act-card[data-id="${id}"]`);
+        if (!card) continue;
+        const form = document.getElementById('form-budget-delete');
+        form.action = card.dataset.urlDelete;
+        document.getElementById('budget-delete-token').value = card.dataset.csrfDelete;
+        // Submit via fetch
+        const fd = new FormData(form);
+        try {
+            await fetch(form.action, { method: 'POST', body: fd });
+        } catch(e) {}
+        card.remove();
+    }
+    toggleSelectMode(false);
+    // Reload to refresh server state
+    window.location.reload();
+}
+
+/* ── Single card delete ─────────────────────── */
+function confirmDeleteOne(btn) {
+    const card = btn.closest('.act-card');
+    confirmDeleteOneByCard(card);
+}
+function confirmDeleteOneByCard(card) {
+    if (!card) return;
+    if (!confirm(`Supprimer le budget "${card.dataset.libelle}" et toutes ses dépenses ?`)) return;
+    const form = document.getElementById('form-budget-delete');
+    form.action = card.dataset.urlDelete;
+    document.getElementById('budget-delete-token').value = card.dataset.csrfDelete;
+    form.submit();
+}
+
+/* ════════════════════════════════════════════════════════
+   EXPORT CSV — Version professionnelle (Excel friendly)
+════════════════════════════════════════════════════════ */
+document.getElementById('exportCsv').addEventListener('click', () => {
+
+    const vis = allCards.filter(c => c.style.display !== 'none');
+
+    const data = [];
+
+    /* Titre */
+    data.push(["TRAVELMATE - RAPPORT DES BUDGETS"]);
+    data.push(["Date : " + new Date().toLocaleDateString('fr-FR')]);
+    data.push([]);
+
+    /* Header tableau */
+    data.push([
+        "Budget",
+        "Voyage",
+        "Devise",
+        "Budget total",
+        "Dépenses",
+        "Total dépensé",
+        "Restant",
+        "Statut"
+    ]);
+
+    vis.forEach(c => {
+
+        data.push([
+            c.dataset.libelle,
+            c.dataset.voyageTitle || '',
+            c.dataset.devise,
+            c.dataset.montant,
+            c.dataset.depenses,
+            c.dataset.totalDepense,
+            c.dataset.restant,
+            c.dataset.statut === 'over' ? 'Dépassé' : 'Contrôlé'
+        ]);
+
+    });
+
+    /* Création Excel */
+    const ws = XLSX.utils.aoa_to_sheet(data);
+
+    /* largeur colonnes */
+    ws['!cols'] = [
+        { wch:20 },
+        { wch:20 },
+        { wch:10 },
+        { wch:15 },
+        { wch:10 },
+        { wch:15 },
+        { wch:15 },
+        { wch:12 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Budgets");
+
+    XLSX.writeFile(
+        wb,
+        "rapport_budgets_travelmate.xlsx"
+    );
+
+});
+
+/* ════════════════════════════════════════════════════════
+   EXPORT PDF — Enhanced Design
+════════════════════════════════════════════════════════ */
 document.getElementById('exportPdf').addEventListener('click', () => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
     const vis = allCards.filter(c => c.style.display !== 'none');
+    const pageW = 297;
+    const today = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+
+    /* ── Cover Header ── */
+    // Gradient header band
+    doc.setFillColor(59, 42, 26);
+    doc.rect(0, 0, pageW, 28, 'F');
     doc.setFillColor(196, 111, 75);
-    doc.rect(0, 0, 297, 22, 'F');
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(13); doc.setFont('helvetica','bold');
-    doc.text('TravelMate — Rapport Budgets', 14, 14);
-    doc.setFontSize(8.5); doc.setFont('helvetica','normal');
-    doc.text('Exporté le ' + new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}), 283, 14, {align:'right'});
-    const sumMontant = vis.reduce((s,c) => s + +c.dataset.montant, 0);
-    const sumRestant = vis.reduce((s,c) => s + +c.dataset.restant, 0);
-    const nbOver     = vis.filter(c => c.dataset.statut === 'over').length;
-    doc.setTextColor(70,50,40); doc.setFontSize(8.5);
-    doc.text(`Budgets : ${vis.length}   |   Montant total : ${sumMontant.toLocaleString('fr-FR')}   |   Restant global : ${sumRestant.toLocaleString('fr-FR')}   |   Dépassés : ${nbOver}`, 14, 30);
+    doc.rect(0, 18, pageW, 10, 'F');
+
+    // Logo area
+    doc.setFillColor(255, 255, 255, 0.15);
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+    doc.text('✦ TravelMate', 14, 12);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.text('Rapport de Budgets de Voyage', 14, 22);
+    doc.setFontSize(8); doc.setTextColor(255, 230, 200);
+    doc.text(`Généré le ${today}`, pageW - 14, 22, { align: 'right' });
+
+    /* ── Summary Section ── */
+    const sumMontant  = vis.reduce((s,c) => s + parseFloat(c.dataset.montant), 0);
+    const sumDepense  = vis.reduce((s,c) => s + parseFloat(c.dataset.totalDepense || 0), 0);
+    const sumRestant  = vis.reduce((s,c) => s + parseFloat(c.dataset.restant), 0);
+    const nbOver      = vis.filter(c => c.dataset.statut === 'over').length;
+    const nbOk        = vis.length - nbOver;
+
+    // Stats cards
+    const statY = 35;
+    const statW = 60, statH = 16, statGap = 6;
+    const stats = [
+        { label: 'Budgets analysés', value: String(vis.length), color: [196,111,75] },
+        { label: 'Montant total alloué', value: sumMontant.toLocaleString('fr-FR') + ' (multi-devises)', color: [59,130,246] },
+        { label: 'Total dépensé', value: sumDepense.toLocaleString('fr-FR'), color: [107,114,128] },
+        { label: 'Budgets dépassés', value: String(nbOver) + ' / ' + vis.length, color: nbOver > 0 ? [185,28,28] : [4,120,87] },
+    ];
+    stats.forEach((s, i) => {
+        const x = 14 + i * (statW + statGap);
+        doc.setFillColor(...s.color);
+        doc.roundedRect(x, statY, statW, statH, 2, 2, 'F');
+        doc.setTextColor(255,255,255);
+        doc.setFontSize(7); doc.setFont('helvetica','normal');
+        doc.text(s.label, x + 4, statY + 5.5);
+        doc.setFontSize(10); doc.setFont('helvetica','bold');
+        doc.text(s.value, x + 4, statY + 12);
+    });
+
+    /* ── Table ── */
     doc.autoTable({
-        startY: 36,
-        head: [['Nom du budget','Devise','Montant total','Dépenses','Restant','Statut']],
-        body: vis.map(c => [
-            c.querySelector('.act-card__name').textContent.trim(),
-            c.dataset.devise, (+c.dataset.montant).toLocaleString('fr-FR'),
-            c.dataset.depenses, (+c.dataset.restant).toLocaleString('fr-FR'),
-            c.dataset.statut === 'over' ? 'Dépassé' : 'Contrôlé'
-        ]),
-        headStyles:         { fillColor:[196,111,75], textColor:255, fontStyle:'bold', fontSize:9 },
-        bodyStyles:         { fontSize:8.5, textColor:[40,40,40] },
-        alternateRowStyles: { fillColor:[252,248,243] },
-        columnStyles: { 0:{cellWidth:72},1:{cellWidth:22,halign:'center'},2:{cellWidth:36,halign:'right'},3:{cellWidth:26,halign:'center'},4:{cellWidth:36,halign:'right'},5:{cellWidth:30,halign:'center'} },
+        startY: statY + statH + 8,
+        head: [['#', 'Nom du budget', 'Voyage', 'Devise', 'Alloué', 'Dépensé', 'Restant', '% Consommé', 'Statut']],
+        body: vis.map((c, i) => {
+            const montant  = parseFloat(c.dataset.montant);
+            const depensed = parseFloat(c.dataset.totalDepense || 0);
+            const restant  = parseFloat(c.dataset.restant);
+            const pct      = parseInt(c.dataset.pct || 0);
+            return [
+                String(i + 1),
+                c.dataset.libelle,
+                c.dataset.voyageTitle || '—',
+                c.dataset.devise,
+                montant.toLocaleString('fr-FR'),
+                depensed.toLocaleString('fr-FR'),
+                Math.abs(restant).toLocaleString('fr-FR'),
+                pct + '%',
+                c.dataset.statut === 'over' ? 'Dépassé' : 'Contrôlé'
+            ];
+        }),
+        headStyles: {
+            fillColor: [59, 42, 26], textColor: [255, 230, 200],
+            fontStyle: 'bold', fontSize: 8.5, cellPadding: 4
+        },
+        bodyStyles: { fontSize: 8, textColor: [40, 40, 40], cellPadding: 3.5 },
+        alternateRowStyles: { fillColor: [252, 248, 243] },
+        columnStyles: {
+            0: { cellWidth: 8,  halign: 'center' },
+            1: { cellWidth: 62 },
+            2: { cellWidth: 40 },
+            3: { cellWidth: 18, halign: 'center' },
+            4: { cellWidth: 28, halign: 'right' },
+            5: { cellWidth: 28, halign: 'right' },
+            6: { cellWidth: 28, halign: 'right' },
+            7: { cellWidth: 20, halign: 'center' },
+            8: { cellWidth: 24, halign: 'center' }
+        },
         didParseCell(data) {
-            if (data.section === 'body' && data.column.index === 5) {
-                data.cell.styles.textColor = data.cell.raw === 'Dépassé' ? [185,28,28] : [4,120,87];
-                data.cell.styles.fontStyle = 'bold';
+            if (data.section === 'body') {
+                // Statut column coloring
+                if (data.column.index === 8) {
+                    if (data.cell.raw === 'Dépassé') {
+                        data.cell.styles.textColor = [185, 28, 28];
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.fillColor = [254, 226, 226];
+                    } else {
+                        data.cell.styles.textColor = [4, 120, 87];
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.fillColor = [209, 250, 229];
+                    }
+                }
+                // Restant column — red if over
+                if (data.column.index === 6) {
+                    const rowIdx = data.row.index;
+                    const card = vis.filter(c => c.style.display !== 'none')[rowIdx];
+                    if (card && card.dataset.statut === 'over') {
+                        data.cell.styles.textColor = [185, 28, 28];
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
+                // % column — color based on value
+                if (data.column.index === 7) {
+                    const pct = parseInt(data.cell.raw);
+                    if (pct >= 100) data.cell.styles.textColor = [185, 28, 28];
+                    else if (pct >= 75) data.cell.styles.textColor = [217, 119, 6];
+                    else data.cell.styles.textColor = [4, 120, 87];
+                    data.cell.styles.fontStyle = 'bold';
+                }
             }
         },
-        margin: { left:14, right:14 },
+        margin: { left: 14, right: 14 },
+        tableLineColor: [220, 210, 200],
+        tableLineWidth: 0.3,
     });
+
+    /* ── Footer on each page ── */
     const n = doc.internal.getNumberOfPages();
     for (let i = 1; i <= n; i++) {
-        doc.setPage(i); doc.setFontSize(7.5); doc.setTextColor(180,180,180);
-        doc.text(`Page ${i} / ${n}`, 283, 205, {align:'right'});
+        doc.setPage(i);
+        doc.setFillColor(245, 237, 227);
+        doc.rect(0, 197, pageW, 8, 'F');
+        doc.setFontSize(7); doc.setFont('helvetica','normal');
+        doc.setTextColor(160, 140, 120);
+        doc.text('TravelMate — Rapport confidentiel', 14, 202);
+        doc.text(`Page ${i} / ${n}`, pageW - 14, 202, { align: 'right' });
     }
-    doc.save('budgets_travelmate.pdf');
+
+    doc.save(`budgets_travelmate_${new Date().toISOString().slice(0,10)}.pdf`);
 });
 
 /* Initial render */
