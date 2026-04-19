@@ -1,0 +1,10 @@
+knp_paginator:
+    page_range: 5                       # number of pages shown
+    default_options:
+        page_name: page                 # page parameter name
+        sort_field_name: sort           # sort field parameter name
+        sort_direction_name: direction  # sort direction parameter name
+        distinct: true                  # ensure distinct results
+    template:
+        pagination: '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig'
+        sortable: '@KnpPaginator/Pagination/sortable_link.html.twig'

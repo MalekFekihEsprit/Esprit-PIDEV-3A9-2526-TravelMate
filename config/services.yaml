@@ -1,18 +1,20 @@
-# This file is the entry point to configure your own services.
-# Files in the packages/ subdirectory configure your dependencies.
-
-# Put parameters here that don't need to change on each machine where the app is deployed
-# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+# config/services.yaml
 parameters:
+    openrouter.key.notification:   '%env(OPENROUTER_API_KEY_NOTIFICATION)%'
+    openrouter.key.inflation:      '%env(OPENROUTER_API_KEY_INFLATION)%'
+    openrouter.key.conversion:     '%env(OPENROUTER_API_KEY_CONVERSION)%'
+    openrouter.key.estimation:     '%env(OPENROUTER_API_KEY_ESTIMATION)%'
+
+    openrouter.model.notification: '%env(OPENROUTER_MODEL_NOTIFICATION)%'
+    openrouter.model.inflation:    '%env(OPENROUTER_MODEL_INFLATION)%'
+    openrouter.model.conversion:   '%env(OPENROUTER_MODEL_CONVERSION)%'
+    openrouter.model.estimation:   '%env(OPENROUTER_MODEL_ESTIMATION)%'
 
 services:
-    # default configuration for services in *this* file
     _defaults:
-        autowire: true      # Automatically injects dependencies in your services.
-        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        autowire: true
+        autoconfigure: true
 
-    # makes classes in src/ available to be used as services
-    # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
         exclude:
@@ -20,5 +22,22 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    App\Service\NotificationService:
+        arguments:
+            $apiKey: '%openrouter.key.notification%'
+            $model:  '%openrouter.model.notification%'
+
+    App\Service\InflationService:
+        arguments:
+            $apiKey: '%openrouter.key.inflation%'
+            $model:  '%openrouter.model.inflation%'
+
+    App\Service\ConversionService:
+        arguments:
+            $apiKey: '%openrouter.key.conversion%'
+            $model:  '%openrouter.model.conversion%'
+
+    App\Service\EstimationService:
+        arguments:
+            $apiKey: '%openrouter.key.estimation%'
+            $model:  '%openrouter.model.estimation%'
