@@ -1579,5 +1579,69 @@ document.getElementById('exportPdf').addEventListener('click', () => {
 
 /* Initial render */
 applyAll();
+
+/* ════════════════════════════════════════════════════════
+   TOAST NOTIFICATION — flying message bottom-right
+════════════════════════════════════════════════════════ */
+(function () {
+    function showToast(message) {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.cssText = [
+                'position:fixed',
+                'bottom:1.5rem',
+                'right:1.5rem',
+                'z-index:9999',
+                'display:flex',
+                'flex-direction:column',
+                'gap:.5rem',
+                'pointer-events:none'
+            ].join(';');
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.style.cssText = [
+            'background:#3b2a1a',
+            'color:#fff',
+            'padding:.75rem 1.1rem',
+            'border-radius:8px',
+            'font-size:.85rem',
+            'max-width:320px',
+            'line-height:1.5',
+            'opacity:0',
+            'transform:translateY(10px)',
+            'transition:opacity .25s ease, transform .25s ease'
+        ].join(';');
+
+        container.appendChild(toast);
+
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+        }));
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px)';
+            toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+        }, 4000);
+    }
+
+    const _fetch = window.fetch;
+    window.fetch = async function (...args) {
+        const res = await _fetch(...args);
+        const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url ?? '');
+        if (url.includes('/ai/notification')) {
+            res.clone().json().then(data => {
+                if (data?.message) showToast(data.message);
+            }).catch(() => {});
+        }
+        return res;
+    };
+})();
 </script>
 {% endblock %}

@@ -1,14 +1,5 @@
 # config/services.yaml
-parameters:
-    openrouter.key.notification:   '%env(OPENROUTER_API_KEY_NOTIFICATION)%'
-    openrouter.key.inflation:      '%env(OPENROUTER_API_KEY_INFLATION)%'
-    openrouter.key.conversion:     '%env(OPENROUTER_API_KEY_CONVERSION)%'
-    openrouter.key.estimation:     '%env(OPENROUTER_API_KEY_ESTIMATION)%'
-
-    openrouter.model.notification: '%env(OPENROUTER_MODEL_NOTIFICATION)%'
-    openrouter.model.inflation:    '%env(OPENROUTER_MODEL_INFLATION)%'
-    openrouter.model.conversion:   '%env(OPENROUTER_MODEL_CONVERSION)%'
-    openrouter.model.estimation:   '%env(OPENROUTER_MODEL_ESTIMATION)%'
+parameters: {}
 
 services:
     _defaults:
@@ -24,20 +15,5 @@ services:
 
     App\Service\NotificationService:
         arguments:
-            $apiKey: '%openrouter.key.notification%'
-            $model:  '%openrouter.model.notification%'
-
-    App\Service\InflationService:
-        arguments:
-            $apiKey: '%openrouter.key.inflation%'
-            $model:  '%openrouter.model.inflation%'
-
-    App\Service\ConversionService:
-        arguments:
-            $apiKey: '%openrouter.key.conversion%'
-            $model:  '%openrouter.model.conversion%'
-
-    App\Service\EstimationService:
-        arguments:
-            $apiKey: '%openrouter.key.estimation%'
-            $model:  '%openrouter.model.estimation%'
+            $ntfyUrl:   '%env(NTFY_URL)%'
+            $ntfyTopic: '%env(NTFY_TOPIC)%'
