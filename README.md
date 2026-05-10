@@ -8,10 +8,9 @@ Core Modules
 🌍 Module 1: Destination & Accommodation Management
 - Destination catalog with multi-criteria search
 - Accommodation availability and pricing
-- City cost-of-living comparisons via Teleport API
 
 🏄 Module 2: Activity & Category Management
-- Hierarchical activity categorization
+- Activity categorization
 - Activity recommendations based on destination
 - Multi-criteria filtering (price, duration, type)
 
